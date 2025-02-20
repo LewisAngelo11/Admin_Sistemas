@@ -5,9 +5,6 @@ echo "Instalando ahora..."
 # Instalar el servicio DHCP
 sudo apt update && sudo apt install isc-dhcp-server -y
 
-# Definir la interfaz de red
-INTERFAZ="enp0s3"
-
 # Configurar la interfaz en isc-dhcp-server
 sudo bash -c "cat > /etc/default/isc-dhcp-server" <<EOF
 INTERFACESv4="enp0s3"
@@ -17,7 +14,6 @@ EOF
 # Pedir los parametros del DHCP
 read -p "Ingrese la dirección de la subred" SUBNET
 read -p "Ingrese la máscara de subred" NETMASK
-read -p "Ingrese el nombre del dominio"
 read -p "Ingrese el rango inicial de direcciones IPs" IP_START
 read -p "Ingrese el rango límite de direcciones IPs" IP_END
 read -p "Ingrese la puerta de enlace" GATEWAY

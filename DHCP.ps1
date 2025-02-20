@@ -3,14 +3,14 @@ $dhcpFeature = Get-WindowsFeature -Name DHCP
 
 if (-not $dhcpFeature.Installed) {
     Write-Output "El protocolo DHCP no está instalado. Instalándolo ahora..."
-    Install-WindowsFeature DHCP -IncludeManagementTools -Source C:\sources\sxs
+    Install-WindowsFeature DHCP -IncludeManagementTools
     Write-Output "El protocolo DHCP se ha instalado correctamente."
 } else {
     Write-Output "El servicio DHCP ya está instalado."
 }
 
 # Pedir parámetros esenciales
-$serverIP = Read-Host "Ingresa la dirección IP del servidor DHCP (Ejemplo: 192.168.1.10)"
+$serverIP = "192.168.100.41" # Ip de mi maquina virtual Windows Server
 $subnetMask = Read-Host "Ingrese la máscara de subred"
 $gateway = Read-Host "Ingrese la puerta de enlace"
 $leaseTime = Read-Host "Ingrese la duración de la concesión en segundos"

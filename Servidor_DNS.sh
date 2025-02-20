@@ -1,13 +1,3 @@
-echo "=== Configuración del servidor DNS ==="
-
-read -p "Ingrese el Nombre del dominio: " DOMINIO
-read -p "Ingrese la IP del Servidor: " IP_SERVER
-read -p "Ingrese la IP del Cliente: " IP_CLIENT
-
-
-echo "Instalando Bind9"
-#!/bin/bash
-
 echo "==== Configuración del Servidor DNS en Ubuntu ===="
 
 # Pedir datos al usuario

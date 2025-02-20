@@ -19,3 +19,12 @@ $miObjeto = New-Object -TypeName PSObject -Property @{
 }
 $miObjeto | Add-Member -MemberType ScriptMethod -Name Saludar -Value { Write-Host "¡Hola Mundo!" }
 $miObjeto | Get-Member
+Get-Process -Name Acrobat | Stop-Process
+Get-Help -Full Get-Process
+Get-Help -Full Stop-Process
+Get-Process
+Get-Help -Full Get-ChildItem
+Get-Help -Full Get-Clipboard
+Get-ChildItem *.txt | Get-Clipboard
+Get-Help -Full Stop-Service
+Get-Service
