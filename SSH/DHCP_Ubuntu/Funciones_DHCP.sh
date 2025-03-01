@@ -27,7 +27,7 @@ configurar_dhcp_conf() {
     echo "Escribiendo configuración en /etc/dhcp/dhcpd.conf..."
     sudo bash -c "cat > /etc/dhcp/dhcpd.conf" <<EOF
 option domain-name "example.org";
-option domain-name-server ns1.example.org, ns2.example.org;
+option domain-name-servers ns1.example.org, ns2.example.org;
 default-lease-time $CONCESION;
 max-lease-time $CONCESION;
 

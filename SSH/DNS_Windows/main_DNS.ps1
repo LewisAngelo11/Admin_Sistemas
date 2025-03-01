@@ -12,7 +12,7 @@ Write-Output "Dominio ingresado: $domain"
 ConfigurarZonaDNS -domain $domain
 
 # Solicitar IP del cliente
-$ipclient = Read-Host "Ingrese la IP del cliente"
+$ipclient = Read-Host "Ingrese la IP del servidor"
 
 # Agregar registros A
 AgregarRegistrosA -domain $domain -ipclient $ipclient
