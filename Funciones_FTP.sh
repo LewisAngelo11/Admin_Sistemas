@@ -50,28 +50,44 @@ create_user() {
     local password=$2
     local group=$3
 
+    # Crear usuario y asignarlo al grupo
     sudo useradd -m -d /home/$username -s /bin/bash -G $group $username
     echo "Usuario $username creado en el grupo $group."
 
-    echo "Asignando contraseña a $username..."
+    # Asignar contraseña al usuario
     echo "$username:$password" | sudo chpasswd
 
-    # Crear carpetas y asignar permisos
-    sudo mkdir -p /home/$username/ftp/{general,$group,$username}
+    # Crear carpetas globales para todos (si no existen)
+    sudo mkdir -p /ftp/general
+    sudo mkdir -p /ftp/reprobados
+    sudo mkdir -p /ftp/recursadores
 
-    # Carpeta general: accesible por todos (solo lectura para anónimos)
-    sudo chown -R root:$group /home/$username/ftp/general
-    sudo chmod -R 775 /home/$username/ftp/general
+    # Crear la carpeta personal del usuario
+    sudo mkdir -p /home/$username/ftp/$username
 
-    # Carpeta del grupo: accesible solo por los miembros del grupo
-    sudo chown -R :$group /home/$username/ftp/$group
-    sudo chmod -R 770 /home/$username/ftp/$group
+    # Crear las carpetas que el usuario montará (general y del grupo)
+    sudo mkdir -p /home/$username/ftp/general
+    sudo mkdir -p /home/$username/ftp/$group
 
-    # Carpeta personal: accesible solo por el propio usuario
+    # Asignar permisos a la carpeta general (acceso público para lectura y escritura para usuarios)
+    sudo chown -R root:root /ftp/general
+    sudo chmod -R 755 /ftp/general  # Lectura para todos, escritura para el propietario
+
+    # Asignar permisos a la carpeta del grupo (solo acceso de lectura y escritura para el grupo correspondiente)
+    sudo chown -R :$group /ftp/$group
+    sudo chmod -R 770 /ftp/$group  # Lectura y escritura solo para miembros del grupo
+
+    # Asignar permisos a la carpeta personal (solo acceso del propio usuario)
     sudo chown -R $username:$username /home/$username/ftp/$username
-    sudo chmod -R 700 /home/$username/ftp/$username
+    sudo chmod -R 700 /home/$username/ftp/$username  # Solo el usuario puede leer/escribir
 
-    echo "Carpetas creadas y permisos asignados a $username."
+    # Montar la carpeta general en el directorio correspondiente del usuario
+    sudo mount --bind /ftp/general /home/$username/ftp/general
+
+    # Montar la carpeta del grupo en el directorio correspondiente del usuario
+    sudo mount --bind /ftp/$group /home/$username/ftp/$group
+
+    echo "Carpetas creadas, permisos asignados y montadas para $username."
 }
 
 
