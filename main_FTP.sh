@@ -1,6 +1,12 @@
 #!/bin/bash
 
+source Funciones_FTP.sh
+
 instalar_ftp
+allow_ftp_port
+config_vsftpd
+create_groups
+setup_anonymous_access
 
 OPCION=-1  # Inicializa la variable para evitar errores
 
@@ -8,6 +14,7 @@ while [ "$OPCION" -ne 0 ]; do
     echo "¿Qué operación desea realizar?"
     echo "1. Crear un nuevo usuario."
     echo "2. Cambiar de grupo."
+    echo "3. Eliminar usuario."
     echo "0. Salir."
     read -p "Elija una opción: " OPCION
 
@@ -29,17 +36,21 @@ while [ "$OPCION" -ne 0 ]; do
             ;;
         
         2)  # Opción 2: Cambiar de grupo
-            read -p "Ingrese el usuario: " USER
-            read -p "Ingrese el nuevo grupo: " GROUP
-            sudo usermod -g "$GROUP" "$USER"
-            echo "El usuario $USER ha sido cambiado al grupo $GROUP."
+            echo "Cambiando de grupo"
+            user_group_info=$(get_user_and_group) # Capturar la salida de la función
+            username=$(echo "$user_group_info" | awk '{print $1}') # Extrae el usuario
+            new_group=$(echo "$user_group_info" | awk '{print $2}') # Extrae el grupo al que se cambiará
+
+            change_user_group "$username" "$new_group"
             ;;
-        
+        3)
+            read -p "Ingrese el nombre del usuario a eliminar: " username
+            delete_user "$username"
+            ;;
         0)  # Salir
             echo "Saliendo..."
             exit 0
             ;;
-        
         *)  # Manejo de opciones inválidas
             echo "Opción no válida. Intente nuevamente."
             ;;
