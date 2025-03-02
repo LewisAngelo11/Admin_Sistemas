@@ -27,6 +27,7 @@ anon_root=/srv/ftp
 chroot_local_user=YES
 allow_writeable_chroot=YES
 anon_world_readable_only=YES
+pasv_enable=YES
 pasv_min_port=40000
 pasv_max_port=50000
 EOF
@@ -57,8 +58,18 @@ create_user() {
 
     # Crear carpetas y asignar permisos
     sudo mkdir -p /home/$username/ftp/{general,$group,$username}
-    sudo chown -R $username:$group /home/$username/ftp
-    sudo chmod -R 770 /home/$username/ftp
+
+    # Carpeta general: accesible por todos (solo lectura para anónimos)
+    sudo chown -R root:$group /home/$username/ftp/general
+    sudo chmod -R 775 /home/$username/ftp/general
+
+    # Carpeta del grupo: accesible solo por los miembros del grupo
+    sudo chown -R :$group /home/$username/ftp/$group
+    sudo chmod -R 770 /home/$username/ftp/$group
+
+    # Carpeta personal: accesible solo por el propio usuario
+    sudo chown -R $username:$username /home/$username/ftp/$username
+    sudo chmod -R 700 /home/$username/ftp/$username
 
     echo "Carpetas creadas y permisos asignados a $username."
 }
@@ -97,11 +108,8 @@ delete_user() {
 
     # Verificar si el usuario existe
     if id "$username" &>/dev/null; then
-        # Eliminar la carpeta asociada al usuario en el FTP
-        sudo rm -rf "/home/$username/ftp"
-
         # Eliminar el usuario del servidor
-        sudo userdel "$username"
+        sudo userdel -r "$username" 2>/dev/null
 
         echo "El usuario '$username' y sus archivos FTP han sido eliminados."
     else
