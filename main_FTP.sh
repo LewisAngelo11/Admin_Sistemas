@@ -14,7 +14,6 @@ while [ "$OPCION" -ne 0 ]; do
     echo "¿Qué operación desea realizar?"
     echo "1. Crear un nuevo usuario."
     echo "2. Cambiar de grupo."
-    echo "3. Eliminar usuario."
     echo "0. Salir."
     read -p "Elija una opción: " OPCION
 
@@ -42,10 +41,6 @@ while [ "$OPCION" -ne 0 ]; do
             new_group=$(echo "$user_group_info" | awk '{print $2}') # Extrae el grupo al que se cambiará
 
             change_user_group "$username" "$new_group"
-            ;;
-        3)
-            read -p "Ingrese el nombre del usuario a eliminar: " username
-            delete_user "$username"
             ;;
         0)  # Salir
             echo "Saliendo..."
