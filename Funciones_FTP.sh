@@ -137,21 +137,6 @@ change_user_group() {
     fi
 }
 
-
-delete_user() {
-    local username=$1
-
-    # Verificar si el usuario existe
-    if id "$username" &>/dev/null; then
-        # Eliminar el usuario del servidor
-        sudo userdel -r "$username" 2>/dev/null
-
-        echo "El usuario '$username' y sus archivos FTP han sido eliminados."
-    else
-        echo "Erro: El usuario '$username' no existe."
-    fi
-}
-
 get_user_and_group() {
     local username
     local new_group
@@ -166,18 +151,45 @@ get_user_and_group() {
 # Función para permitir acceso anónimo a la carpeta "general"
 setup_anonymous_access() {
     sudo mkdir -p /srv/ftp/general
-    sudo chmod -R 755 /srv/ftp/general
-    sudo chown -R nobody:nogroup /srv/ftp/general
+    sudo mount --bind /ftp/general /srv/ftp/general
+    echo "Acceso anónimo configurado en /srv/ftp/general."
 
     sudo systemctl restart vsftpd
-    echo "Acceso anónimo configurado en /srv/ftp/general."
 }
 
 allow_ftp_port() {
     # Activar la regla para el puerto 21 (FTP) en el firewall
     sudo ufw allow 21/tcp
+    sudo ufw allow 40000:50000/tcp
 
     # Verificar el estado para confirmar que la regla se ha añadido
     echo "Regla para el puerto 21 (FTP) añadida al firewall."
     sudo ufw status | grep "21"
+}
+
+# Función para validar el nombre de usuario
+validar_usuario() {
+    local usuario="$1"
+    
+    # Validar que no esté vacío
+    if [[ -z "$usuario" ]]; then
+        echo "El nombre de usuario no puede estar vacío."
+        return 1
+    fi
+
+    # Validar que no exceda los 20 caracteres
+    if [[ ${#usuario} -gt 20 ]]; then
+        echo "El nombre de usuario no puede tener más de 20 caracteres."
+        return 1
+    fi
+
+    # Validar que no sea solo números
+    if [[ "$usuario" =~ ^[0-9]+$ ]]; then
+        echo "El nombre de usuario no puede ser solo números."
+        return 1
+    fi
+
+    # Si pasa todas las validaciones
+    echo "El nombre de usuario '$usuario' es válido."
+    return 0
 }
