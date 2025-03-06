@@ -50,16 +50,16 @@ function Configure-FTPServer {
 
 
 function Enabled-Autentication(){
-    Set-ItemProperty "IIS:\Sites\FTP" -Name ftpServer.Security.authentication.basicAuthentication.enabled -Value $true
+    Set-ItemProperty "IIS:\Sites\Default FTP Site" -Name ftpServer.Security.authentication.basicAuthentication.enabled -Value $true
 }
 
 function Enabled-SSL(){
-    Set-ItemProperty "IIS:\Sites\FTP" -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
-    Set-ItemProperty "IIS:\Sites\FTP" -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
+    Set-ItemProperty "IIS:\Sites\Default FTP Site" -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
+    Set-ItemProperty "IIS:\Sites\Default FTP Site" -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
 }
 
 function Enabled-AccessAnonym(){
-    Set-ItemProperty "IIS:\Sites\FTP" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $true
+    Set-ItemProperty "IIS:\Sites\Default FTP Site" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $true
 }
 
 
@@ -105,15 +105,17 @@ function create_user ([String]$Username, [String]$Password, [String]$Group) {
         mkdir "C:\FTP\LocalUser\$Username"
         mkdir "C:\FTP\Users\$Username"
         icacls "C:\FTP\LocalUser\$Username" /grant "$($Username):(OI)(CI)F"
-        icacls "C:\FTP\$Group" /grant "$($Group):(OI)(CI)F"
+        icacls "C:\FTP\$FTPGroup" /grant "$($FTPGroup):(OI)(CI)F"
         icacls "C:\FTP\general" /grant "$($Username):(OI)(CI)F"
-        icacls "C:\FTP\$Group" /grant "$($Username):(OI)(CI)F"
+        icacls "C:\FTP\$FTPGroup" /grant "$($Username):(OI)(CI)F"
         New-Item -ItemType Junction -Path "C:\FTP\LocalUser\$Username\general" -Target "C:\FTP\general"
         icacls "C:\FTP\LocalUser\$Username\general" /grant "$($Username):(OI)(CI)F"
         New-Item -ItemType Junction -Path "C:\FTP\LocalUser\$Username\$Username" -Target "C:\FTP\Users\$Username"
         icacls "C:\FTP\LocalUser\$Username\$Username" /grant "$($Username):(OI)(CI)F"
-        New-Item -ItemType Junction -Path "C:\FTP\LocalUser\$Username\$Group" -Target "C:\FTP\$Group"
-        icacls "C:\FTP\LocalUser\$Username\$Group" /grant "$($Username):(OI)(CI)F"
+        New-Item -ItemType Junction -Path "C:\FTP\LocalUser\$Username\$FTPGroup" -Target "C:\FTP\$FTPGroup"
+        icacls "C:\FTP\LocalUser\$Username\$FTPGroup" /grant "$($Username):(OI)(CI)F"
+
+        configurar_permisos -FTPUserGroupName $FTPGroup
 
         Write-Output "Usuario '$Username' creado correctamente."
     }
@@ -152,24 +154,28 @@ function delete_user([String]$Username) {
     }
 }
 
-function configurar_permisos {
-$FTPSitePath = "IIS:\Sites\$FTPSiteName"
-$BasicAuth = 'ftpServer.security.authentication.basicAuthentication.enabled'
+function configurar_permisos ([String]$FTPUserGroupName) {
+    $FTPSitePath = "IIS:\Sites\Default FTP Site"
+    $BasicAuth = 'ftpServer.security.authentication.basicAuthentication.enabled'
 
-Set-ItemProperty -Path $FTPSitePath -Name $BasicAuth -Value $True
+    # Habilitar autenticación básica en IIS
+    Set-ItemProperty -Path $FTPSitePath -Name $BasicAuth -Value $True
 
-$Param = @{
-    Filter = "/system.ftpServer/security/authorization"
-    Value = @{
-        accessType = "Allow"
-        roles = "$FTPUserGroupName"
-        permissions = 3
+    # Configurar permisos en IIS para el grupo de usuarios FTP
+    $Param = @{
+        Filter = "/system.ftpServer/security/authorization"
+        Value = @{
+            accessType = "Allow"
+            roles = "$FTPUserGroupName"
+            permissions = 3
+        }
+        PSPath = 'IIS:\'
+        Location = $FTPSiteName
     }
-    PSPath = 'IIS:\'
-    Location = $FTPSiteName
-}
 
-Add-WebConfiguration @Param
+    Add-WebConfiguration @Param
+
+    Write-Output "Permisos de IIS configurados para '$FTPUserGroupName' en 'Default FTP Site'."
 }
 
 function Validate-Password {
