@@ -65,6 +65,12 @@ create_user() {
     local password=$2
     local group=$3
 
+    # Validar el nombre de usuario
+    validar_usuario "$username"
+    if [ $? -ne 0 ]; then
+        return 1  # Si la validación falla, no continuar con la creación del usuario
+    fi
+
     if id "$username" &>/dev/null; then
         echo "El usuario $username ya existe"
     else
@@ -137,6 +143,7 @@ change_user_group() {
     fi
 }
 
+
 get_user_and_group() {
     local username
     local new_group
@@ -157,6 +164,7 @@ setup_anonymous_access() {
     sudo systemctl restart vsftpd
 }
 
+
 allow_ftp_port() {
     # Activar la regla para el puerto 21 (FTP) en el firewall
     sudo ufw allow 21/tcp
@@ -169,7 +177,7 @@ allow_ftp_port() {
 
 # Función para validar el nombre de usuario
 validar_usuario() {
-    local usuario="$1"
+    local usuario
     
     # Validar que no esté vacío
     if [[ -z "$usuario" ]]; then
@@ -183,13 +191,27 @@ validar_usuario() {
         return 1
     fi
 
-    # Validar que no sea solo números
-    if [[ "$usuario" =~ ^[0-9]+$ ]]; then
-        echo "El nombre de usuario no puede ser solo números."
+    # Si pasa todas las validaciones
+    echo "El nombre de usuario '$usuario' es válido."
+    return 0
+}
+
+
+# Función para validar la contraseña
+validar_contraseña() {
+    local password
+    
+    # Validar que no contenga espacios en blanco
+    if [[ -z "$password" ]]; then
+        echo "La contraseña no puede contener espacios en blanco."
         return 1
     fi
 
-    # Si pasa todas las validaciones
-    echo "El nombre de usuario '$usuario' es válido."
+    # Validar que no tenga más de 8 caracteres
+    if [[ ${#password} -gt 8 ]]; then
+        echo "La contraseña no puede tener más de 8 caracteres."
+        return 1
+    fi
+
     return 0
 }
