@@ -1,7 +1,7 @@
 function Configure-FTPServer {
     param(
-        [string]$FTPSiteName = 'Default FTP Site',
-        [string]$FTPDir = 'C:\FTP',
+        [string]$FTPSiteName = 'FTP Site',
+        [string]$FTPDir = 'C:\FTPRoot',
         [int]$FTPPort = 21
     )
 
@@ -50,16 +50,22 @@ function Configure-FTPServer {
 
 
 function Enabled-Autentication(){
-    Set-ItemProperty "IIS:\Sites\Default FTP Site" -Name ftpServer.Security.authentication.basicAuthentication.enabled -Value $true
+    Set-ItemProperty "IIS:\Sites\FTP Site" -Name ftpServer.Security.authentication.basicAuthentication.enabled -Value $true
 }
 
 function Enabled-SSL(){
-    Set-ItemProperty "IIS:\Sites\Default FTP Site" -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
-    Set-ItemProperty "IIS:\Sites\Default FTP Site" -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
+    Set-ItemProperty "IIS:\Sites\FTP Site" -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
+    Set-ItemProperty "IIS:\Sites\FTP Site" -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
 }
 
 function Enabled-AccessAnonym(){
-    Set-ItemProperty "IIS:\Sites\Default FTP Site" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $true
+    # Habilitar autenticación anónima
+    Set-ItemProperty "IIS:\Sites\FTP Site" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $true
+}
+
+
+function Restart-Site(){
+    Restart-WebItem "IIS:\Sites\FTP Site"
 }
 
 
@@ -102,20 +108,21 @@ function create_user ([String]$Username, [String]$Password, [String]$Group) {
         $CreateFTPUser.SetPassword("$FTPPassword")
         $CreateFTPUser.SetInfo()
 
-        mkdir "C:\FTP\LocalUser\$Username"
-        mkdir "C:\FTP\Users\$Username"
-        icacls "C:\FTP\LocalUser\$Username" /grant "$($Username):(OI)(CI)F"
-        icacls "C:\FTP\$FTPGroup" /grant "$($FTPGroup):(OI)(CI)F"
-        icacls "C:\FTP\general" /grant "$($Username):(OI)(CI)F"
-        icacls "C:\FTP\$FTPGroup" /grant "$($Username):(OI)(CI)F"
-        New-Item -ItemType Junction -Path "C:\FTP\LocalUser\$Username\general" -Target "C:\FTP\general"
-        icacls "C:\FTP\LocalUser\$Username\general" /grant "$($Username):(OI)(CI)F"
-        New-Item -ItemType Junction -Path "C:\FTP\LocalUser\$Username\$Username" -Target "C:\FTP\Users\$Username"
-        icacls "C:\FTP\LocalUser\$Username\$Username" /grant "$($Username):(OI)(CI)F"
-        New-Item -ItemType Junction -Path "C:\FTP\LocalUser\$Username\$FTPGroup" -Target "C:\FTP\$FTPGroup"
-        icacls "C:\FTP\LocalUser\$Username\$FTPGroup" /grant "$($Username):(OI)(CI)F"
+        mkdir "C:\FTPRoot\LocalUser\$FTPUsername"
+        mkdir "C:\FTPRoot\Users\$FTPUsername"
+        icacls "C:\FTPRoot\LocalUser\$FTPUsername" /grant "$($FTPUsername):(OI)(CI)F"
+        icacls "C:\FTPRoot\LocalUser\$FTPUsername" /grant "Usuarios:(OI)(CI)M"
+        icacls "C:\FTPRoot\$FTPGroup" /grant "$($FTPGroup):(OI)(CI)F"
+        icacls "C:\FTPRoot\LocalUser\Public" /grant "$($FTPUsername):(OI)(CI)F"
+        # icacls "C:\FTP\$FTPGroup" /grant "$($FTPUsername):(OI)(CI)F"
+        New-Item -ItemType Junction -Path "C:\FTPRoot\LocalUser\$FTPUsername\Public" -Target "C:\FTPRoot\LocalUser\Public"
+        icacls "C:\FTPRoot\LocalUser\$FTPUsername\Public" /grant "$($FTPUsername):(OI)(CI)F"
+        New-Item -ItemType Junction -Path "C:\FTPRoot\LocalUser\$FTPUsername\$FTPUsername" -Target "C:\FTPRoot\Users\$FTPUsername"
+        icacls "C:\FTPRoot\LocalUser\$FTPUsername\$FTPUsername" /grant "$($FTPUsername):(OI)(CI)F"
+        New-Item -ItemType Junction -Path "C:\FTPRoot\LocalUser\$FTPUsername\$FTPGroup" -Target "C:\FTPRoot\$FTPGroup"
+        icacls "C:\FTPRoot\LocalUser\$FTPUsername\$FTPGroup" /grant "$($FTPUsername):(OI)(CI)F"
 
-        configurar_permisos -FTPUserGroupName $FTPGroup
+        # configurar_permisos -FTPUserGroupName $FTPGroup
 
         Write-Output "Usuario '$Username' creado correctamente."
     }
@@ -147,8 +154,8 @@ function delete_user([String]$Username) {
         echo "El campo de usuario no debe quedar vacio ni contener valores nulos"
     }
     else{
-        rm -Force "C:\FTP\LocalUser\$UserDelete" -Recurse -Force
-        rm "C:\FTP\Users\$UserDelete" -Recurse -Force
+        rm -Force "C:\FTPRoot\LocalUser\$UserDelete" -Recurse
+        rm "C:\FTPRoot\Users\$UserDelete" -Recurse -Force
         Remove-LocalUser -Name $UserDelete
         echo "Usuario eliminado"
     }
@@ -157,10 +164,16 @@ function delete_user([String]$Username) {
 function configurar_permisos ([String]$FTPUserGroupName) {
     $FTPSitePath = "IIS:\Sites\Default FTP Site"
     $BasicAuth = 'ftpServer.security.authentication.basicAuthentication.enabled'
-
+    
     # Habilitar autenticación básica en IIS
     Set-ItemProperty -Path $FTPSitePath -Name $BasicAuth -Value $True
-
+    
+    # Configurar el aislamiento de usuario (CRUCIAL)
+    Set-ItemProperty -Path $FTPSitePath -Name "ftpServer.userIsolation.mode" -Value "IsolateUsingUserName"
+    
+    # Asegurarse de que la ruta física apunte al directorio base correcto
+    Set-ItemProperty -Path $FTPSitePath -Name "physicalPath" -Value "C:\FTPRoot\LocalUser"
+    
     # Configurar permisos en IIS para el grupo de usuarios FTP
     $Param = @{
         Filter = "/system.ftpServer/security/authorization"
@@ -172,11 +185,14 @@ function configurar_permisos ([String]$FTPUserGroupName) {
         PSPath = 'IIS:\'
         Location = "Default FTP Site"
     }
-
     Add-WebConfiguration @Param
-
+    
+    # Reiniciar el servicio FTP para aplicar los cambios
+    Restart-Service ftpsvc -Force -ErrorAction SilentlyContinue
+    
     Write-Output "Permisos de IIS configurados para '$FTPUserGroupName' en 'Default FTP Site'."
 }
+
 
 function Validate-Password {
     param ([string]$Password)
@@ -204,3 +220,4 @@ function Validate-Password {
     
     return $true
 }
+
