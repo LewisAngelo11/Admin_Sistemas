@@ -22,28 +22,69 @@ while ($true) {
     switch ($option) {
         "1" {
             $user = Read-Host "Ingrese el nombre de usuario"
-            $passwd = Read-Host "Ingrese la contraseña"
-            $group = Read-Host "Asignele un grupo al usuario creado (reprobados/recursadores)"
-            if ($group -eq "reprobados" -or $group -eq "recursadores") {
-                create_user -Username $user -Password $passwd -Group $group
-                add_user_to_group -Username $user -GroupName $group
-                Restart-Site
-                break # Salir del bucle si el grupo es válido
-            } else {
-                Write-Output "Grupo no válido. Debe ser 'reprobados' o 'recursadores'."
+            # Validar que no esté en blanco
+            if((Get-LocalUser -Name $user -ErrorAction SilentlyContinue)){
+                echo "El usuario ya existe"
+            }
+            elseif ([string]::IsNullOrWhiteSpace($user)) {
+                Write-Host "Error: El nombre de usuario no puede estar en blanco." -ForegroundColor Red
+            }
+            elseif ($user.length -gt 20){
+                echo "El nombre de usuario excede el maximo de caracteres permitido para un usuario"
+            }
+            else{
+                # Bucle para validar la contraseña
+                $passwordValid = $false
+                do {
+                    $passwd = Read-Host "Ingrese la contraseña"
+                    $passwordValid = Validate-Password -Password $passwd
+        
+                    if (-not $passwordValid) {
+                        Write-Host "Por favor, intente con otra contraseña." -ForegroundColor Yellow
+                    }
+                } while (-not $passwordValid)
+    
+                # Bucle para validar el grupo
+                do {
+                    $group = Read-Host "Asignele un grupo al usuario creado (reprobados/recursadores)"
+        
+                    if ($group -eq "reprobados" -or $group -eq "recursadores") {
+                        create_user -Username $user -Password $passwd -Group $group
+                        add_user_to_group -Username $user -GroupName $group
+                        Restart-Site
+                        break 2 # Salir de ambos bucles si el grupo es válido
+                    } else {
+                        Write-Host "Grupo no válido. Debe ser 'reprobados' o 'recursadores'." -ForegroundColor Red
+                    }
+                } while ($true)
             }
         }
         "2" {
+            # Solicitar y validar el nombre de usuario
             $user = Read-Host "Ingrese el nombre de usuario"
+    
+            # Validar que no esté en blanco
+            if ([string]::IsNullOrWhiteSpace($user)) {
+                Write-Host "Error: El nombre de usuario no puede estar en blanco." -ForegroundColor Red
+                break # Salir del bucle principal si está en blanco
+            }
+    
+            # Validar que no supere 20 caracteres
+            if ($user.Length > 20) {
+                Write-Host "Error: El nombre de usuario no puede superar los 20 caracteres." -ForegroundColor Red
+                break # Salir del bucle principal si supera 20 caracteres
+            }
+    
+            # Validar que el usuario exista
+            try {
+                $userExists = Get-LocalUser -Name $user -ErrorAction Stop
+            }
+            catch {
+                Write-Host "Error: El usuario '$user' no existe en el sistema." -ForegroundColor Red
+                break # Salir del bucle principal si el usuario no existe
+            }
             $group = Read-Host "Ingrese el nombre del grupo al que se va a cambiar"
-            #change_user_group -Username $user -NewGroup $group
-            Remove-LocalGroupMember -Member $user -Group "recursadores"
-            rm "C:\FTPRoot\LocalUser\$user\recursadores" -Recurse -Force
-            #add_user_to_group -Username $user -GroupName $group
-            New-Item -ItemType Junction -Path "C:\FTPRoot\LocalUser\$user\$group" -Target "C:\FTPRoot\$group"
-            icacls "C:\FTPRoot\LocalUser\$user\$group" /grant "$($user):(OI)(CI)F"
-            icacls "C:\FTPRoot\$group" /grant "$($user):(OI)(CI)F"
-            Restart-Site
+            Change-UserGroup -Username $user -NewGroup $group
         }
         "3" { 
             $user = Read-Host "Ingresa el usuario a eliminar"

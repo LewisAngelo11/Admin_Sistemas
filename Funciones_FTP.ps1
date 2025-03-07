@@ -142,6 +142,73 @@ function add_user_to_group([String]$Username, [String]$GroupName) {
     }
 }
 
+function Change-UserGroup {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$Username,
+        
+        [Parameter(Mandatory=$true)]
+        [string]$NewGroup
+    )
+
+    # Validar que el grupo sea válido ("reprobados" o "recursadores")
+    if ($NewGroup -ne "reprobados" -and $NewGroup -ne "recursadores") {
+        Write-Host "Error: El grupo no es válido. Solo se permiten los grupos 'reprobados' o 'recursadores'."
+        return
+    }
+    
+    # Obtener el grupo actual del usuario
+    $userGroups = Get-LocalGroupMember -Group "recursadores" -Member $Username -ErrorAction SilentlyContinue
+    $otherGroup = Get-LocalGroupMember -Group "reprobados" -Member $Username -ErrorAction SilentlyContinue
+    
+    $currentGroup = $null
+    if ($userGroups) {
+        $currentGroup = "recursadores"
+    } elseif ($otherGroup) {
+        $currentGroup = "reprobados"
+    }
+    
+    # Validar si el grupo actual es el mismo que el nuevo grupo
+    if ($currentGroup -eq $NewGroup) {
+        Write-Host "El usuario '$Username' ya pertenece al grupo '$NewGroup'. No se requieren cambios."
+        return
+    }
+    
+    # Si el usuario pertenece a alguno de los grupos, removerlo
+    if ($currentGroup) {
+        try {
+            Remove-LocalGroupMember -Group $currentGroup -Member $Username
+            if (Test-Path "C:\FTPRoot\LocalUser\$Username\$currentGroup") {
+                Remove-Item "C:\FTPRoot\LocalUser\$Username\$currentGroup" -Recurse -Force
+            }
+            Write-Host "Usuario '$Username' removido del grupo '$currentGroup'."
+        } catch {
+            Write-Host "Error al remover el usuario del grupo actual: $_"
+            return
+        }
+    }
+    
+    # Agregar el usuario al nuevo grupo
+    try {
+        Add-LocalGroupMember -Group $NewGroup -Member $Username
+        
+        # Crear la unión de directorio
+        New-Item -ItemType Junction -Path "C:\FTPRoot\LocalUser\$Username\$NewGroup" -Target "C:\FTPRoot\$NewGroup"
+        
+        # Establecer permisos
+        icacls "C:\FTPRoot\LocalUser\$Username\$NewGroup" /grant "$($Username):(OI)(CI)F"
+        icacls "C:\FTPRoot\$NewGroup" /grant "$($Username):(OI)(CI)F"
+        
+        # Reiniciar el sitio
+        Restart-Site
+        
+        Write-Host "Usuario '$Username' agregado exitosamente al grupo '$NewGroup'."
+    } catch {
+        Write-Host "Error al agregar el usuario al nuevo grupo: $_"
+        return
+    }
+}
+
 function delete_user([String]$Username) {
     $UserDelete = $Username
     if(!(Get-LocalUser -Name $UserDelete -ErrorAction SilentlyContinue)){
@@ -220,4 +287,3 @@ function Validate-Password {
     
     return $true
 }
-
