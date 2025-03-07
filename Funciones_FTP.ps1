@@ -170,7 +170,7 @@ function configurar_permisos ([String]$FTPUserGroupName) {
             permissions = 3
         }
         PSPath = 'IIS:\'
-        Location = $FTPSiteName
+        Location = "Default FTP Site"
     }
 
     Add-WebConfiguration @Param
