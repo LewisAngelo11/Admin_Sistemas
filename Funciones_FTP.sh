@@ -28,6 +28,10 @@ chroot_local_user=NO
 allow_writeable_chroot=YES
 anon_world_readable_only=YES
 pasv_enable=YES
+dirmessage_enable=YES
+use_localtime=YES
+xferlog_enable=YES
+connect_from_port_20=YES
 pasv_min_port=40000
 pasv_max_port=50000
 EOF
@@ -50,13 +54,13 @@ create_files_FTP() {
     sudo mkdir -p /ftp/recursadores
 
     sudo chown -R root:users /ftp/general
-    sudo chmod -R 775 /ftp/general
+    sudo chmod -R 777 /ftp/general
 
     sudo chown -R :reprobados /ftp/reprobados
-    sudo chmod -R 770 /ftp/reprobados
+    sudo chmod -R 775 /ftp/reprobados
 
     sudo chown -R :recursadores /ftp/recursadores
-    sudo chmod -R 770 /ftp/recursadores
+    sudo chmod -R 775 /ftp/recursadores
 }
 
 # Función para crear un usuario y asignarlo a un grupo
@@ -65,12 +69,6 @@ create_user() {
     local password=$2
     local group=$3
 
-    # Validar el nombre de usuario
-    validar_usuario "$username"
-    if [ $? -ne 0 ]; then
-        return 1  # Si la validación falla, no continuar con la creación del usuario
-    fi
-
     if id "$username" &>/dev/null; then
         echo "El usuario $username ya existe"
     else
@@ -78,7 +76,7 @@ create_user() {
             sudo useradd "$username"
             echo "$username:$password" | sudo chpasswd
 
-            sudo useradd "$username" "$group"
+            sudo adduser "$username" "$group"
 
             # Crear carpetas y asignar permisos
             sudo mkdir -p /home/$username/ftp/$username
@@ -106,7 +104,7 @@ change_user_group() {
     local new_group=$2
 
     # Obtener el grupo actual del usuario
-    current_group=$(groups "$username" | awk '{print $5}')
+    current_group=$(groups "$username" | awk '{print $4}')
 
     # Verificar si el usuario existe
     if id "$username" &>/dev/null; then
@@ -118,7 +116,7 @@ change_user_group() {
                 return
             fi
             # Desmontar la carpeta del grupo anterior y montar la nueva
-            sudo umount "/home/$username/ftp/$current_group" 2>/dev/null
+            sudo umount "/home/$username/ftp/$current_group"
 
             sudo deluser $username $current_group
             sudo adduser $username $new_group
@@ -132,7 +130,6 @@ change_user_group() {
 
             # Montar la nueva carpeta del nuevo grupo y la general
             sudo mount --bind "/ftp/$new_group" "/home/$username/ftp/$new_group"
-            sudo mount --bind "/ftp/$general" "/home/$username/ftp/$new_group"
 
             echo "El usuario '$username' ha sido cambiado al grupo '$new_group' y las carpetas han sido actualizadas."
         else

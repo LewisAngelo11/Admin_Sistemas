@@ -24,13 +24,16 @@ while ($true) {
             $user = Read-Host "Ingrese el nombre de usuario"
             # Validar que no esté en blanco
             if((Get-LocalUser -Name $user -ErrorAction SilentlyContinue)){
-                echo "El usuario ya existe"
+                Write-Host "El usuario ya existe"
             }
             elseif ([string]::IsNullOrWhiteSpace($user)) {
                 Write-Host "Error: El nombre de usuario no puede estar en blanco." -ForegroundColor Red
             }
             elseif ($user.length -gt 20){
-                echo "El nombre de usuario excede el maximo de caracteres permitido para un usuario"
+                Write-Host "El nombre de usuario excede el maximo de caracteres permitido para un usuario"
+            }
+            elseif ($user -match "^[^a-zA-Z0-9]") {
+                Write-Host "El nombre de usuario no puede comenzar con un carácter especial. Intente de nuevo." -ForegroundColor Red
             }
             else{
                 # Bucle para validar la contraseña
@@ -74,6 +77,9 @@ while ($true) {
                 Write-Host "Error: El nombre de usuario no puede superar los 20 caracteres." -ForegroundColor Red
                 break # Salir del bucle principal si supera 20 caracteres
             }
+            elseif ($user -match "^[^a-zA-Z0-9]") {
+                Write-Host "El nombre de usuario no puede comenzar con un carácter especial. Intente de nuevo." -ForegroundColor Red
+            }
     
             # Validar que el usuario exista
             try {
@@ -88,9 +94,22 @@ while ($true) {
         }
         "3" { 
             $user = Read-Host "Ingresa el usuario a eliminar"
-            
-            delete_user -Username $user
-            Restart-Site
+            if((Get-LocalUser -Name $user -ErrorAction SilentlyContinue)){
+                Write-Host "El usuario ya existe"
+            }
+            elseif ([string]::IsNullOrWhiteSpace($user)) {
+                Write-Host "Error: El nombre de usuario no puede estar en blanco." -ForegroundColor Red
+            }
+            elseif ($user.length -gt 20){
+                Write-Host "El nombre de usuario excede el maximo de caracteres permitido para un usuario"
+            }
+            elseif ($user -match "^[^a-zA-Z0-9]") {
+                Write-Host "El nombre de usuario no puede comenzar con un carácter especial. Intente de nuevo." -ForegroundColor Red
+            }
+            else {
+                delete_user -Username $user
+                Restart-Site
+            }
         }
         "0" {
             break

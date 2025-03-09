@@ -20,7 +20,22 @@ while [ "$OPCION" -ne 0 ]; do
     case "$OPCION" in
         1)  # Opción 1: Crear un usuario
             read -p "Ingrese el usuario: " USER
+            if [[ ${#USER} -gt 20 ]]; then
+                echo "El usuario es demasiado largo."
+                continue
+            elif [[ ${#USER} -lt 4 ]]; then
+                echo "El nombre es demasiado corto."
+                continue
+            fi
+
             read -p "Ingrese la contraseña: " PASSW
+            if [[ ${#PASSW} -gt 20 ]]; then
+                echo "El contraseña es demasiado largo."
+                continue
+            elif [[ ${#PASSW} -lt 4 ]]; then
+                echo "El contraseña es demasiado corto."
+                continue
+            fi
 
             while true; do
                 read -p "Asignele un grupo al usuario creado (reprobados/recursadores): " GROUP
@@ -36,11 +51,25 @@ while [ "$OPCION" -ne 0 ]; do
         
         2)  # Opción 2: Cambiar de grupo
             echo "Cambiando de grupo"
-            user_group_info=$(get_user_and_group) # Capturar la salida de la función
-            username=$(echo "$user_group_info" | awk '{print $1}') # Extrae el usuario
-            new_group=$(echo "$user_group_info" | awk '{print $2}') # Extrae el grupo al que se cambiará
+            read -p "Ingrese el usuario a cambiar: " USER
+            if [[ ${#USER} -gt 20 ]]; then
+                echo "El usuario es demasiado largo."
+                continue
+            elif [[ ${#USER} -lt 4 ]]; then
+                echo "El nombre es demasiado corto."
+                continue
+            fi
 
-            change_user_group "$username" "$new_group"
+            while true; do
+                read -p "Asignele el nuevo grupo al usuario: " NEW_GROUP
+
+                if [ "$GROUP" = "reprobados" ] || [ "$GROUP" = "recursadores" ]; then
+                    change_user_group "$username" "$NEW_GROUP"
+                    break  # Salir del bucle si el grupo es válido
+                else
+                    echo "Grupo no válido. Debe ser 'reprobados' o 'recursadores'."
+                fi
+            done
             ;;
         0)  # Salir
             echo "Saliendo..."
