@@ -14,7 +14,7 @@ get_last_lts_apache_version(){
     local url=$1
 
     # Filtrar las versiones LTS (pares en el número menor de la versión)
-    local lts_versions=$(curl -s "$url" | grep -oE 'httpd-[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz' | grep -E 'httpd-[0-9]+\.(2|4|6|8)\.' | sort -V | tail -1)
+    local lts_versions=$(curl -s "$url" | grep -oE 'httpd-[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz' | grep -P 'httpd-[0-9]+\.[0-9]*[02468]\.' | sort -V | tail -1)
     echo "${lts_versions}"
 }
 
@@ -22,9 +22,20 @@ get_last_lts_apache_version(){
 get_last_lts_nginx_version(){
     local url=$1
 
+    # Buscar versiones LTS
     # Para Nginx, las versiones estables tienen el segundo número par (1.20.x, 1.22.x, etc.)
-    local stable_versions=$(curl -s "$url" | grep -oE 'nginx-[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz' | grep -E 'nginx-[0-9]+\.(0|2|4|6|8|10|12|14|16|18|20|22|24)\.' | sort -V | tail -1)
+    local stable_versions=$(curl -s "$url" | grep -oE 'nginx-[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz' | grep -P 'nginx-[0-9]+\.[0-9]*[02468]\.' | sort -V | tail -1)
     echo "${stable_versions}"
+}
+
+# Obtener la version de desarrollo de Nginx
+get_last_dev_nginx_version(){
+    local url=$1
+
+    # Buscar versiones de desarrollo. 
+    # Las versiones de desarrollo suelen tener un número impar en la segunda parte de la versión (por ejemplo: 1.25.x, 1.27.x, etc.)
+    local dev_versions=$(curl -s "$url" | grep -oE 'nginx-[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz' | grep -P 'nginx-[0-9]+\.[0-9]*[13579]\.' | sort -V | tail -1)
+    echo "${dev_versions}"
 }
 
 # Funcion para instalar el servicio http
@@ -46,8 +57,8 @@ install_server_http(){
     # Compilar el archivo
     ./configure --prefix=/usr/local/"$servicio" > /dev/null 2>&1
     # Instalar servicio
-    make -s > /dev/null 2>&1
-    sudo make -s install > /dev/null 2>&1
+    make #-s > /dev/null 2>&1
+    sudo make install #> /dev/null 2>&1
 }
 
 # Función para eliminar los sufijos .tar.gz del los archivos
@@ -56,8 +67,8 @@ remove_tar_gz_suffix() {
     echo "${filename%.tar.gz}"
 }
 
-# FUNCIONES EXTRAS...
-# Función para depurar NO es relevante en el script
+# FUNCIONES EXTRAS. Estas no son relevantes para el funcionamiento del script
+# Funciones para depurar...
 get_all_apache_versions(){
     local url=$1
     
@@ -66,7 +77,6 @@ get_all_apache_versions(){
     echo "${lts_versions}"
 }
 
-# Función para depurar, NO es relevante en el script
 get_all_nginx_versions(){
     local url=$1
     
