@@ -7,7 +7,7 @@ OPCION=-1  # Inicializa la variable para evitar errores
 while [ "$OPCION" -ne 0 ]; do
     echo "¿Qué servicio desea instalar?"
     echo "1. Apache."
-    echo "2. Caddy (No disponible)."
+    echo "2. Lighttpd."
     echo "3. Nginx."
     echo "0. Salir."
     read -p "Elija una opción: " OPCION
@@ -64,14 +64,12 @@ while [ "$OPCION" -ne 0 ]; do
             ;;
         2)
             echo "Instalar Caddy..."
-            downloadsCaddy="https://nginx.org/en/download.html"
-            
+            downloadsLighttp="https://www.lighttpd.net/releases/"
+            $last_lts_version=$()
             ;;
         3)
             echo "Instalar Nginx..."
             downloadsNginx="https://nginx.org/en/download.html"
-            # page_nginx=$(get_html "$downloadsNginx") # Linea para debugear
-            # all_versions=$(get_all_nginx_versions "$downloadsNginx") # Linea para debugear
             last_lts_version=$(get_last_lts_nginx_version "$downloadsNginx")
             clean_version=$(remove_tar_gz_suffix "$last_lts_version")
 

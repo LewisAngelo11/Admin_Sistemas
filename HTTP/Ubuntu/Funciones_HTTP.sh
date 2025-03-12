@@ -57,8 +57,8 @@ install_server_http(){
     # Compilar el archivo
     ./configure --prefix=/usr/local/"$servicio" > /dev/null 2>&1
     # Instalar servicio
-    make #-s > /dev/null 2>&1
-    sudo make install #> /dev/null 2>&1
+    make -s > /dev/null 2>&1
+    sudo make install > /dev/null 2>&1
 }
 
 # Función para eliminar los sufijos .tar.gz del los archivos
