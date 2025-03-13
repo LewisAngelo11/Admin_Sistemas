@@ -60,6 +60,7 @@ while($true){
                                 Start-Process caddy.exe
                                 Get-Process | Where-Object { $_.ProcessName -like "*caddy*" }
                                 Select-String -Path "C:\Descargas\Caddyfile" -Pattern ":$PORT"
+                                netsh advfirewall firewall add rule name="Caddy" dir=in action=allow protocol=TCP localport=$PORT
                             }
                         }
                         "2"{
@@ -81,6 +82,7 @@ while($true){
                                 Start-Process caddy.exe
                                 Get-Process | Where-Object { $_.ProcessName -like "*caddy*" }
                                 Select-String -Path "C:\Descargas\Caddyfile" -Pattern ":$PORT"
+                                netsh advfirewall firewall add rule name="Caddy" dir=in action=allow protocol=TCP localport=$PORT
                             }
                         }
                     }
