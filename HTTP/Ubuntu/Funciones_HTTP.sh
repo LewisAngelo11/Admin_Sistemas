@@ -9,34 +9,14 @@ get_html(){
     echo "${html}"
 }
 
-# Obtener la version LTS más reciente de apache
-get_last_lts_apache_version(){
-    local url=$1
 
-    # Filtrar las versiones LTS (pares en el número menor de la versión)
-    local lts_versions=$(curl -s "$url" | grep -oE 'httpd-[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz' | grep -P 'httpd-[0-9]+\.[0-9]*[02468]\.' | sort -V | tail -1)
-    echo "${lts_versions}"
+get_lts_version(){
+    local url=$1
+    local index=${2:-0}
+    readarray -t versions < <(curl -s "$url" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | sort -V -r | uniq)
+    echo "${versions[$index]}"
 }
 
-# Obtener la version LTS más reciente de nginx
-get_last_lts_nginx_version(){
-    local url=$1
-
-    # Buscar versiones LTS
-    # Para Nginx, las versiones estables tienen el segundo número par (1.20.x, 1.22.x, etc.)
-    local stable_versions=$(curl -s "$url" | grep -oE 'nginx-[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz' | grep -P 'nginx-[0-9]+\.[0-9]*[02468]\.' | sort -V | tail -1)
-    echo "${stable_versions}"
-}
-
-# Obtener la version de desarrollo de Nginx
-get_last_dev_nginx_version(){
-    local url=$1
-
-    # Buscar versiones de desarrollo. 
-    # Las versiones de desarrollo suelen tener un número impar en la segunda parte de la versión (por ejemplo: 1.25.x, 1.27.x, etc.)
-    local dev_versions=$(curl -s "$url" | grep -oE 'nginx-[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz' | grep -P 'nginx-[0-9]+\.[0-9]*[13579]\.' | sort -V | tail -1)
-    echo "${dev_versions}"
-}
 
 # Funcion para instalar el servicio http
 install_server_http(){
@@ -66,21 +46,11 @@ remove_tar_gz_suffix() {
     local filename=$1
     echo "${filename%.tar.gz}"
 }
+get_first_digit(){
+    local index=$1
+    local cadena=$2
 
-# FUNCIONES EXTRAS. Estas no son relevantes para el funcionamiento del script
-# Funciones para depurar...
-get_all_apache_versions(){
-    local url=$1
-    
-    # Obtener todas las versiones de la pagina oficial
-    local lts_versions=$(curl -s "$url" | grep -oE 'httpd-[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz')
-    echo "${lts_versions}"
+    IFS='.' read -ra version <<< "$cadena"
+    echo "${version[$index]}"
 }
 
-get_all_nginx_versions(){
-    local url=$1
-    
-    # Obtener todas las versiones de Nginx
-    local versions=$(curl -s "$url" | grep -oE 'nginx-[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz')
-    echo "${versions}"
-}

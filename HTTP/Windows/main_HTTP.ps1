@@ -46,7 +46,7 @@ while($true){
 
                             if ($PORT -notmatch "^\d+$") {
                                 Write-Output "Debes ingresar un número."
-                            } elseif ($PORT -gt 1023 -or $PORT -lt 65536) {
+                            } elseif (-not($PORT -gt 1023 -or $PORT -lt 65536)) {
                                 Write-Output "Puerto no válido, debe estar entre 1024 y 65535."
                             } else {
                                 Stop-Process -Name caddy -ErrorAction SilentlyContinue
@@ -67,7 +67,7 @@ while($true){
 
                             if ($PORT -notmatch "^\d+$") {
                                 Write-Output "Debes ingresar un número."
-                            } elseif ($PORT -gt 1023 -or $PORT -lt 65536) {
+                            } elseif (-not($PORT -gt 1023 -or $PORT -lt 65536)) {
                                 Write-Output "Puerto no válido, debe estar entre 1024 y 65535."
                             } else {
                                 Stop-Process -Name caddy -ErrorAction SilentlyContinue
@@ -109,7 +109,7 @@ while($true){
                             $PORT = Read-Host "Ingresa el puerto donde se realizara la instalacion"
                             if ($PORT -notmatch "^\d+$") {
                                 Write-Output "Debes ingresar un número."
-                            } elseif ($PORT -gt 1023 -or $PORT -lt 65536) {
+                            } elseif (-not($PORT -gt 1023 -or $PORT -lt 65536)) {
                                 Write-Output "Puerto no válido, debe estar entre 1024 y 65535."
                             } else {
                                 Stop-Process -Name nginx -ErrorAction SilentlyContinue
@@ -127,7 +127,7 @@ while($true){
                             $PORT = Read-Host "Ingresa el puerto donde se realizara la instalacion"
                             if ($PORT -notmatch "^\d+$") {
                                 Write-Output "Debes ingresar un número."
-                            } elseif ($PORT -gt 1023 -or $PORT -lt 65536) {
+                            } elseif (-not($PORT -gt 1023 -or $PORT -lt 65536)) {
                                 Write-Output "Puerto no válido, debe estar entre 1024 y 65535."
                             } else {
                                 Stop-Process -Name nginx -ErrorAction SilentlyContinue
