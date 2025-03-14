@@ -19,3 +19,28 @@ function get-version-format {
 function quit-V([string]$version) {
     return $version -replace "^v", ""
 }
+
+$puertosReservados = @(
+    @{ Servicio = "FTP"; Puerto = 21 },
+    @{ Servicio = "SSH"; Puerto = 22 },
+    @{ Servicio = "Telnet"; Puerto = 23 },
+    @{ Servicio = "HTTP"; Puerto = 80 },
+    @{ Servicio = "HTTPS"; Puerto = 443 },
+    @{ Servicio = "SMPT"; Puerto = 25 },
+    @{ Servicio = "MySQL"; Puerto = 3306 },
+    @{ Servicio = "SQL Server"; Puerto = 1433 }
+)
+
+function VerifyPortsReserved {
+    param (
+        [int]$port
+    )
+
+    $puertoEncontrado = $puertosReservados | Where-Object { $_.Puerto -eq $port}
+
+    if ($puertoEncontrado) {
+        return $true
+    } else {
+        return $false
+    }
+}

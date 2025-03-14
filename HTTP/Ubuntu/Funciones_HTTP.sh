@@ -17,7 +17,6 @@ get_lts_version(){
     echo "${versions[$index]}"
 }
 
-
 # Funcion para instalar el servicio http
 install_server_http(){
     local url=$1
@@ -41,11 +40,7 @@ install_server_http(){
     sudo make install > /dev/null 2>&1
 }
 
-# Función para eliminar los sufijos .tar.gz del los archivos
-remove_tar_gz_suffix() {
-    local filename=$1
-    echo "${filename%.tar.gz}"
-}
+
 get_first_digit(){
     local index=$1
     local cadena=$2
@@ -54,3 +49,28 @@ get_first_digit(){
     echo "${version[$index]}"
 }
 
+# Array de puertos reservados para servicios comunes
+declare -A puertosReservados
+puertosReservados=(
+    [21]="FTP"
+    [22]="SSH"
+    [23]="Telnet"
+    [80]="HTTP"
+    [443]="HTTPS"
+    [25]="SMTP"
+    [3306]="MySQL"
+    [1433]="SQL Server"
+)
+
+# Función para verificar si el puerto está reservado
+verificar_puerto_reservado() {
+    local puerto=$1
+    # Verifica si el puerto existe en el array de puertos reservados
+    if [[ -v puertosReservados[$puerto] ]]; then
+        echo "El puerto $puerto está reservado para el servicio ${puertosReservados[$puerto]}."
+        return 1  # El puerto está ocupado
+    else
+        echo "El puerto $puerto está disponible."
+        return 0  # El puerto está disponible
+    fi
+}

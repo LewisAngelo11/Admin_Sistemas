@@ -39,6 +39,8 @@ while($true){
 
                 if ($OPCION_CADDY -notmatch "^\d+$") {
                     Write-Output "Debes ingresar un número."
+                } elseif (VerifyPortsReserved -port $PORT) {
+                    Write-Host "El puerto $PORT está reservado para un servicio ."
                 } else {
                     switch($OPCION_CADDY){
                         "1"{
@@ -46,18 +48,20 @@ while($true){
 
                             if ($PORT -notmatch "^\d+$") {
                                 Write-Output "Debes ingresar un número."
-                            } elseif (-not($PORT -gt 1023 -or $PORT -lt 65536)) {
+                            } elseif ($PORT -lt 1023 -or $PORT -gt 65536) {
                                 Write-Output "Puerto no válido, debe estar entre 1024 y 65535."
+                            } elseif (VerifyPortsReserved -port $PORT) {
+                                Write-Host "El puerto $PORT está reservado para un servicio ."
                             } else {
                                 Stop-Process -Name caddy -ErrorAction SilentlyContinue
+                                # Obtiene la versión limpia de Caddy (parece que "quit-V" es una función personalizada, debería verificarse).
                                 $ltsVersionClean = (quit-V -version "$ltsVersion")
-                                Write-Output "$ltsVersionClean"
                                 Invoke-WebRequest -UseBasicParsing "https://github.com/caddyserver/caddy/releases/download/$ltsVersion/caddy_${ltsVersionClean}_windows_amd64.zip" -Outfile "C:\Descargas\caddy-$ltsVersion.zip"
                                 Expand-Archive C:\Descargas\caddy-$ltsVersion.zip C:\Descargas -Force
                                 cd C:\Descargas
                                 New-Item c:\Descargas\Caddyfile -type file -Force
                                 Add-Content -Path "C:\Descargas\Caddyfile" -Value ":$PORT"
-                                Start-Process caddy.exe
+                                Start-Process -NoNewWindow -FilePath "C:\descargas\caddy.exe" -ArgumentList "run --config C:\descargas\Caddyfile"
                                 Get-Process | Where-Object { $_.ProcessName -like "*caddy*" }
                                 Select-String -Path "C:\Descargas\Caddyfile" -Pattern ":$PORT"
                                 netsh advfirewall firewall add rule name="Caddy" dir=in action=allow protocol=TCP localport=$PORT
@@ -68,18 +72,19 @@ while($true){
 
                             if ($PORT -notmatch "^\d+$") {
                                 Write-Output "Debes ingresar un número."
-                            } elseif (-not($PORT -gt 1023 -or $PORT -lt 65536)) {
+                            } elseif ($PORT -lt 1023 -or $PORT -gt 65536) {
                                 Write-Output "Puerto no válido, debe estar entre 1024 y 65535."
+                            }  elseif (VerifyPortsReserved -port $PORT) {
+                                Write-Host "El puerto $PORT está reservado para un servicio ."
                             } else {
                                 Stop-Process -Name caddy -ErrorAction SilentlyContinue
                                 $devVersionClean = (quit-V -version "$devVersion")
-                                Write-Output "$devVersionClean"
                                 Invoke-WebRequest -UseBasicParsing "https://github.com/caddyserver/caddy/releases/download/$devVersion/caddy_${devVersionClean}_windows_amd64.zip" -Outfile "C:\Descargas\caddy-$devVersion.zip"
                                 Expand-Archive C:\Descargas\caddy-$devVersion.zip C:\Descargas -Forc
                                 cd C:\Descargas
                                 New-Item c:\Descargas\Caddyfile -type file -Force
                                 Add-Content -Path "C:\Descargas\Caddyfile" -Value ":$PORT"
-                                Start-Process caddy.exe
+                                Start-Process -NoNewWindow -FilePath "C:\descargas\caddy.exe" -ArgumentList "run --config C:\descargas\Caddyfile"
                                 Get-Process | Where-Object { $_.ProcessName -like "*caddy*" }
                                 Select-String -Path "C:\Descargas\Caddyfile" -Pattern ":$PORT"
                                 netsh advfirewall firewall add rule name="Caddy" dir=in action=allow protocol=TCP localport=$PORT
@@ -111,8 +116,10 @@ while($true){
                             $PORT = Read-Host "Ingresa el puerto donde se realizara la instalacion"
                             if ($PORT -notmatch "^\d+$") {
                                 Write-Output "Debes ingresar un número."
-                            } elseif (-not($PORT -gt 1023 -or $PORT -lt 65536)) {
+                            } elseif ($PORT -lt 1023 -or $PORT -gt 65536) {
                                 Write-Output "Puerto no válido, debe estar entre 1024 y 65535."
+                            } elseif (VerifyPortsReserved -port $PORT) {
+                                Write-Host "El puerto $PORT está reservado para un servicio ."
                             } else {
                                 Stop-Process -Name nginx -ErrorAction SilentlyContinue
                                 Invoke-WebRequest -UseBasicParsing "https://nginx.org/download/nginx-$ltsVersion.zip" -Outfile "C:\Descargas\nginx-$ltsVersion.zip"
@@ -129,8 +136,10 @@ while($true){
                             $PORT = Read-Host "Ingresa el puerto donde se realizara la instalacion"
                             if ($PORT -notmatch "^\d+$") {
                                 Write-Output "Debes ingresar un número."
-                            } elseif (-not($PORT -gt 1023 -or $PORT -lt 65536)) {
+                            } elseif ($PORT -lt 1023 -or $PORT -gt 65536) {
                                 Write-Output "Puerto no válido, debe estar entre 1024 y 65535."
+                            } elseif (VerifyPortsReserved -port $PORT) {
+                                Write-Host "El puerto $PORT está reservado para un servicio ."
                             } else {
                                 Stop-Process -Name nginx -ErrorAction SilentlyContinue
                                 Invoke-WebRequest -UseBasicParsing "https://nginx.org/download/nginx-$devVersion.zip" -Outfile "C:\Descargas\nginx-$devVersion.zip"

@@ -30,9 +30,13 @@ while [ "$OPCION" -ne 0 ]; do
                 "1")
                     # Pedir el puerto al usuario
                     read -p "Ingrese el puerto en el que se instalará Apache: " PORT
+                    verificar_puerto_reservado -puerto $PORT
+
                     # Verificar si el puerto esta disponible
                     if ss -tuln | grep -q ":$PORT "; then
                         echo "El puerto $PORT esta en uso. Eliga otro."
+                    elif [[ $? -eq 0 ]]; then
+                        echo "El puerto $PORT esta ocupado en otro servicio."
                     else
                         install_server_http "$downloadsApache" "httpd-$last_lts_version.tar.gz" "httpd-$last_lts_version" "apache2"
                         # Verificar la instalacón
@@ -73,10 +77,13 @@ while [ "$OPCION" -ne 0 ]; do
             case "$OPCION_TOMCAT" in
                 "1")
                     fisrt_digit=$(get_first_digit 0 "$last_lts_version")
-                    read -p "Ingrese el puerto en el que se instalará Nginx: " PORT
+                    read -p "Ingrese el puerto en el que se instalará Tomcat: " PORT
+                    verificar_puerto_reservado -puerto $PORT
 
                     if ss -tuln | grep -q ":$PORT "; then
                         echo "El puerto $PORT esta en uso. Eliga otro."
+                    elif [[ $? -eq 0 ]]; then
+                        echo "El puerto $PORT esta ocupado en otro servicio."
                     else
                         # Instalar Java ya que Tomcat lo requiere
                         sudo apt update
@@ -96,10 +103,13 @@ while [ "$OPCION" -ne 0 ]; do
                     ;;
                 "2")
                     fisrt_digit=$(get_first_digit 0 "$dev_version")
-                    read -p "Ingrese el puerto en el que se instalará Nginx: " PORT
+                    read -p "Ingrese el puerto en el que se instalará Tomcat: " PORT
+                    verificar_puerto_reservado -puerto $PORT
 
                     if ss -tuln | grep -q ":$PORT "; then
                         echo "El puerto $PORT esta en uso. Eliga otro."
+                    elif [[ $? -eq 0 ]]; then
+                        echo "El puerto $PORT esta ocupado en otro servicio."
                     else
                         # Instalar Java ya que Tomcat lo requiere
                         sudo apt update
@@ -140,9 +150,12 @@ while [ "$OPCION" -ne 0 ]; do
             case "$OPCION_NGINX" in
                 "1")
                     read -p "Ingrese el puerto en el que se instalará Nginx: " PORT
+                    verificar_puerto_reservado -puerto $PORT
 
                     if ss -tuln | grep -q ":$PORT "; then
                         echo "El puerto $PORT esta en uso. Eliga otro."
+                    elif [[ $? -eq 0 ]]; then
+                        echo "El puerto $PORT esta ocupado en otro servicio."
                     else
                         install_server_http "https://nginx.org/download/" "nginx-$last_lts_version.tar.gz" "nginx-$last_lts_version" "nginx"
                         # Verificar la instalación de Nginx
@@ -161,9 +174,12 @@ while [ "$OPCION" -ne 0 ]; do
                 2)
                     echo "Instalando al versión de desarrollo de Nginx..."
                     read -p "Ingrese el puerto en el que se instalará Nginx: " PORT
+                    verificar_puerto_reservado -puerto $PORT
 
                     if ss -tuln | grep -q ":$PORT "; then
                         echo "El puerto $PORT esta en uso. Eliga otro."
+                    elif [[ $? -eq 0 ]]; then
+                        echo "El puerto $PORT esta ocupado en otro servicio."
                     else
                         install_server_http "https://nginx.org/download/" "nginx-$dev_version.tar.gz" "nginx-$dev_version" "nginx"
                         # Verificar la instalación de Nginx
