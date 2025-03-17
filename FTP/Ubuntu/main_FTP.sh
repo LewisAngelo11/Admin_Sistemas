@@ -10,7 +10,7 @@ setup_anonymous_access
 
 OPCION=-1  # Inicializa la variable para evitar errores
 
-while [ "$OPCION" -ne 0 ]; do
+while [ "$OPCION" != "0" ]; do
     echo "¿Qué operación desea realizar?"
     echo "1. Crear un nuevo usuario."
     echo "2. Cambiar de grupo."
@@ -30,10 +30,10 @@ while [ "$OPCION" -ne 0 ]; do
 
             read -p "Ingrese la contraseña: " PASSW
             if [[ ${#PASSW} -gt 20 ]]; then
-                echo "El contraseña es demasiado largo."
+                echo "La contraseña es demasiado larga."
                 continue
             elif [[ ${#PASSW} -lt 4 ]]; then
-                echo "El contraseña es demasiado corto."
+                echo "La contraseña es demasiado corta."
                 continue
             fi
 
@@ -48,7 +48,7 @@ while [ "$OPCION" -ne 0 ]; do
                 fi
             done
             ;;
-        
+
         2)  # Opción 2: Cambiar de grupo
             echo "Cambiando de grupo"
             read -p "Ingrese el usuario a cambiar: " USER
@@ -63,8 +63,8 @@ while [ "$OPCION" -ne 0 ]; do
             while true; do
                 read -p "Asignele el nuevo grupo al usuario: " NEW_GROUP
 
-                if [ "$GROUP" = "reprobados" ] || [ "$GROUP" = "recursadores" ]; then
-                    change_user_group "$username" "$NEW_GROUP"
+                if [ "$NEW_GROUP" = "reprobados" ] || [ "$NEW_GROUP" = "recursadores" ]; then
+                    change_user_group "$USER" "$NEW_GROUP"
                     break  # Salir del bucle si el grupo es válido
                 else
                     echo "Grupo no válido. Debe ser 'reprobados' o 'recursadores'."
