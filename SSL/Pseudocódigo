@@ -1,0 +1,66 @@
+Inicio
+
+    // Preguntar si desea instalar desde FTP o Web
+    Imprimir "¿Desde dónde desea instalar el servicio HTTP?"
+    Imprimir "1. Desde FTP"
+    Imprimir "2. Desde la Web"
+    Leer opcion
+
+    Si opcion == 1 entonces
+        // Instalación desde FTP
+        Imprimir "¿Deseas usar una conexión segura (SSL) para FTP? (Sí/No)"
+        Leer respuestaFTP
+
+        Si respuestaFTP == "Sí" entonces
+            ConectarFTPS()
+            Si VerificarCertificadoSSL() == FALSO entonces
+                Imprimir "Certificado SSL no válido. Abortando."
+                Terminar
+            Fin Si
+        Sino
+            ConectarFTP()
+        Fin Si
+
+        // Descarga desde FTP
+        Imprimir "Selecciona el servicio HTTP a instalar"
+        Leer servicioSeleccionado
+
+        Imprimir "Selecciona la versión del servicio HTTP"
+        Leer versionSeleccionada
+
+        DescargarArchivosHTTP(servicioSeleccionado, versionSeleccionada)
+
+    Sino si opcion == 2 entonces
+        // Instalación desde Web
+        Imprimir "¿Deseas incluir SSL en la configuración del servicio HTTP? (Sí/No)"
+        Leer respuestaSSL
+
+    Fin Si
+
+    // Instalación del servicio HTTP
+    Imprimir "Instalando servicio HTTP..."
+    InstalarServicioHTTP(servicioSeleccionado, respuestaSSL)
+
+Fin
+
+// Función para instalar servicio HTTP con o sin SSL
+Función InstalarServicioHTTP(servicioSeleccionado, respuestaSSL)
+    Imprimir "Instalando el servicio HTTP " + servicioSeleccionado + "..."
+    // Lógica de instalación del servicio HTTP
+
+    Si respuestaSSL == "Sí" entonces
+        Imprimir "Configurando SSL..."
+        GenerarCertificadoSSL()
+        ConfigurarHTTPS()
+    Fin Si
+
+    ReiniciarServicioHTTP()
+Fin Función
+
+// Función para configurar HTTPS en el servicio HTTP
+Función ConfigurarHTTPS()
+    Imprimir "Configurando servicio HTTP para HTTPS..."
+    // Habilitar SSL en la configuración del servidor
+    // Modificar configuración (Ejemplo: Apache2 o Nginx)
+    // Habilitar puerto 443
+Fin Función
