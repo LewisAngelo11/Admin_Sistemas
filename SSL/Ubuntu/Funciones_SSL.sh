@@ -98,7 +98,7 @@ generate_ssl_cert() {
     sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout $cert_dir/server.key \
         -out $cert_dir/server.crt \
-        -subj "/C=ES/ST=State/L=City/O=Organization/CN=$domain_name" \
+        -subj "/C=ES/ST=State/L=City/O=Organization/CN=localhost" \
         > /dev/null 2>&1
         
     echo "Certificado SSL autofirmado generado en $cert_dir"
@@ -107,15 +107,14 @@ generate_ssl_cert() {
 # Función para configurar SSL en Apache
 configure_ssl_apache() {
     local apache_root=$1
-    local domain_name=$2
-    local port=$3
-    local https_port=$4
+    local port=$2
+    local https_port=$3
     
     # Ruta para certificados
     local cert_dir="$apache_root/conf/ssl"
     
     # Generar certificados
-    generate_ssl_cert "$cert_dir" "$domain_name"
+    generate_ssl_cert "$cert_dir"
     
     # Habilitar módulos SSL en httpd.conf
     sudo sed -i 's/#LoadModule ssl_module modules\/mod_ssl.so/LoadModule ssl_module modules\/mod_ssl.so/' $apache_root/conf/httpd.conf
@@ -128,9 +127,8 @@ configure_ssl_apache() {
     # Añadir configuración SSL al final del archivo
     cat << EOF | sudo tee -a $apache_root/conf/httpd.conf > /dev/null
 # SSL Configuration
-Listen $port
-<VirtualHost *:$port>
-    ServerName $domain_name
+Listen $https_port
+<VirtualHost *:$https_port>
     DocumentRoot "$apache_root/htdocs"
     SSLEngine on
     SSLCertificateFile "$cert_dir/server.crt"

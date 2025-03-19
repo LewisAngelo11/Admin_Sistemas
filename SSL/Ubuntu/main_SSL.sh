@@ -68,9 +68,9 @@ while [ "$OPCION" -ne 0 ]; do
                                         # Pedir el puerto al usuario
                                         read -p "Ingrese el puerto en el que se instalará Apache: " PORT
                                         read -p "Ingrese el puerto HTTPS para SSL (recomendado 443): " HTTPS_PORT
+                                        read -p "Ingrese el nombre del dominio (ejemplo: www.example.com): " DOMAIN_NAME
                                         verificar_puerto_reservado -puerto $PORT
                                         verificar_puerto_reservado -puerto $HTTPS_PORT
-                                        DOMAIN_NAME="www.example.com"
 
                                         # Verificar si el puerto esta disponible
                                         if ss -tuln | grep -q ":$PORT "; then
@@ -85,7 +85,7 @@ while [ "$OPCION" -ne 0 ]; do
                                             routeFileConfiguration="/usr/local/apache2"
                                             configure_ssl_apache "$routeFileConfiguration" "$DOMAIN_NAME" "$PORT" "$HTTPS_PORT"
                                             sudo /usr/local/apache2/bin/apachectl restart
-                                            echo "Puede acceder mediante https://$DOMAIN_NAME:$HTTPS_PORT"
+                                            echo "Configuracion lista"
                                         fi
                                     ;;
                                     2)
