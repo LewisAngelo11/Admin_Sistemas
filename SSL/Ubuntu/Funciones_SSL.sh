@@ -35,16 +35,6 @@ EOF
     sudo systemctl enable vsftpd
 }
 
-# Mostrar 
-show_services_web(){
-    echo "¿Qué servicio desea instalar?"
-    echo "1. Apache."
-    echo "2. Tomcat."
-    echo "3. Nginx."
-    echo "0. Salir."
-    read -p "Elija una opción: " OPCION
-}
-
 # Instalar servicio http con SSL
 install_server_http_ssl() {
     local url=$1
@@ -89,7 +79,6 @@ install_server_http_ssl() {
 # Función para generar certificados SSL
 generate_ssl_cert() {
     local cert_dir=$1
-    local domain_name=$2
     
     # Crear directorios para certificados si no existen
     sudo mkdir -p $cert_dir

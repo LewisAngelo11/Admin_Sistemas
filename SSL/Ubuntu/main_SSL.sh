@@ -68,7 +68,6 @@ while [ "$OPCION" -ne 0 ]; do
                                         # Pedir el puerto al usuario
                                         read -p "Ingrese el puerto en el que se instalará Apache: " PORT
                                         read -p "Ingrese el puerto HTTPS para SSL (recomendado 443): " HTTPS_PORT
-                                        read -p "Ingrese el nombre del dominio (ejemplo: www.example.com): " DOMAIN_NAME
                                         verificar_puerto_reservado -puerto $PORT
                                         verificar_puerto_reservado -puerto $HTTPS_PORT
 
@@ -83,7 +82,7 @@ while [ "$OPCION" -ne 0 ]; do
                                             /usr/local/apache2/bin/httpd -v
                                             # Ruta de la configuración del archivo
                                             routeFileConfiguration="/usr/local/apache2"
-                                            configure_ssl_apache "$routeFileConfiguration" "$DOMAIN_NAME" "$PORT" "$HTTPS_PORT"
+                                            configure_ssl_apache "$routeFileConfiguration" "$PORT" "$HTTPS_PORT"
                                             sudo /usr/local/apache2/bin/apachectl restart
                                             echo "Configuracion lista"
                                         fi
@@ -100,7 +99,89 @@ while [ "$OPCION" -ne 0 ]; do
                                 esac
                             ;;
                             2)
+                                echo "Instalar Tomcat..."
+                                downloadsTomcat="https://tomcat.apache.org/index.html"
+                                dev_version=$(get_lts_version "$downloadsTomcat" 0)
+                                last_lts_version=$(get_lts_version "$downloadsTomcat" 1)
 
+                                echo "¿Que versión de Tomcat desea instalar"
+                                echo "1. Última versión LTS $last_lts_version"
+                                echo "2. Versión de desarrollo $dev_version"
+                                echo "0. Salir"
+                                read -p "Eliga una opción: " OPCION_TOMCAT
+
+                                case "$OPCION_TOMCAT" in
+                                    1)
+                                        fisrt_digit=$(get_first_digit 0 "$last_lts_version")
+                                        read -p "Ingrese el puerto en el que se instalará Tomcat: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 8443):" HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
+
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif ss -tuln | grep -q ":$HTTPS_PORT "; then
+                                            echo "El puerto $HTTPS_PORT esta ocupado en otro servicio."
+                                        else
+                                            # Instalar Java ya que Tomcat lo requiere
+                                            sudo apt update
+                                            sudo apt install default-jdk -y
+                                            java -version
+                                            curl -s -O "https://dlcdn.apache.org/tomcat/tomcat-$fisrt_digit/v$last_lts_version/bin/apache-tomcat-$last_lts_version.tar.gz"
+                                            tar -xzvf apache-tomcat-$last_lts_version.tar.gz
+                                            sudo mv apache-tomcat-$last_lts_version /opt/tomcat
+                                            # Modificar el puerto en server.xml
+                                            server_xml="/opt/tomcat/conf/server.xml"
+                                            sudo sed -i "s/port=\"8080\"/port=\"$PORT\"/g" "$server_xml"
+                                            sudo sed -i "s/port=\"8080\"/port=\"$HTTPS_PORT\"/g" "$server_xml"
+                                            # Cambiar el conector SSL para usar el puerto HTTPS
+                                            sudo sed -i "s/keystoreFile=\"\"/keystoreFile=\"\/opt\/tomcat\/conf\/keystore.jks\"/g" "$server_xml"
+                                            sudo sed -i "s/keystorePass=\"\"/keystorePass=\"changeit\"/g" "$server_xml"
+                                            # Otorgar permisos de ejecución
+                                            sudo chmod +x /opt/tomcat/bin/*.sh
+                                            # Iniciar Tomcat
+                                            /opt/tomcat/bin/startup.sh
+                                        fi
+                                    ;;
+                                    2)
+                                        fisrt_digit=$(get_first_digit 0 "$dev_version")
+                                        read -p "Ingrese el puerto en el que se instalará Tomcat: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 8443):" HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
+
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif ss -tuln | grep -q ":$HTTPS_PORT "; then
+                                            echo "El puerto $HTTPS_PORT esta ocupado en otro servicio."
+                                        else
+                                            # Instalar Java ya que Tomcat lo requiere
+                                            sudo apt update
+                                            sudo apt install default-jdk -y
+                                            java -version
+                                            curl -s -O "https://dlcdn.apache.org/tomcat/tomcat-$fisrt_digit/v$dev_version/bin/apache-tomcat-$dev_version.tar.gz"
+                                            tar -xzvf apache-tomcat-$dev_version.tar.gz
+                                            sudo mv apache-tomcat-$dev_version /opt/tomcat
+                                            # Modificar el puerto en server.xml
+                                            server_xml="/opt/tomcat/conf/server.xml"
+                                            sudo sed -i "s/port=\"8080\"/port=\"$PORT\"/g" "$server_xml"
+                                            sudo sed -i "s/port=\"8080\"/port=\"$HTTPS_PORT\"/g" "$server_xml"
+                                            # Cambiar el conector SSL para usar el puerto HTTPS
+                                            sudo sed -i "s/keystoreFile=\"\"/keystoreFile=\"\/opt\/tomcat\/conf\/keystore.jks\"/g" "$server_xml"
+                                            sudo sed -i "s/keystorePass=\"\"/keystorePass=\"changeit\"/g" "$server_xml"
+                                            # Otorgar permisos de ejecución
+                                            sudo chmod +x /opt/tomcat/bin/*.sh
+                                            # Iniciar Tomcat
+                                            /opt/tomcat/bin/startup.sh
+                                        fi
+                                    ;;
+                                    0)
+                                        echo "Saliendo..."
+                                    ;;
+                                    *)
+                                        echo "Opción no válida."
+                                    ;;
+                                esac
                             ;;
                             3)
 
