@@ -132,3 +132,65 @@ EOF
     
     echo "SSL configurado correctamente para Apache"
 }
+
+# Función para configurar SSL en Nginx
+configure_ssl_nginx() {
+    local nginx_root=$1
+    local http_port=$2
+    local https_port=$3
+    
+    # Ruta para certificados
+    local cert_dir="$nginx_root/conf/ssl"
+    
+    # Generar certificados
+    generate_ssl_cert "$cert_dir"
+    
+    # Crear configuración de Nginx con SSL
+    cat << EOF | sudo tee $nginx_root/conf/nginx.conf > /dev/null
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+        listen       $http_port;
+        server_name  localhost;
+        
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+        
+        # Redirigir HTTP a HTTPS (opcional)
+        # return 301 https://\$host:\$server_port\$request_uri;
+    }
+
+    server {
+        listen       $https_port ssl;
+        server_name  localhost;
+
+        ssl_certificate      $cert_dir/server.crt;
+        ssl_certificate_key  $cert_dir/server.key;
+        ssl_protocols       TLSv1.2 TLSv1.3;
+        ssl_ciphers         HIGH:!aNULL:!MD5;
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+    }
+}
+EOF
+    
+    echo "SSL configurado correctamente para Nginx"
+    
+    # Reiniciar Nginx para aplicar cambios
+    sudo $nginx_root/sbin/nginx -s reload || sudo $nginx_root/sbin/nginx
+}

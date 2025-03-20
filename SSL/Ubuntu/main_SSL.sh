@@ -184,7 +184,65 @@ while [ "$OPCION" -ne 0 ]; do
                                 esac
                             ;;
                             3)
+                                echo "Instalar Nginx"
+                                downloadsNginx="https://nginx.org/en/download.html"
+                                dev_version=$(get_lts_version "$downloadsNginx" 0)
+                                last_lts_version=$(get_lts_version "$downloadsNginx" 1)
 
+                                echo "¿Que versión de Nginx desea instalar"
+                                echo "1. Última versión LTS $last_lts_version"
+                                echo "2. Versión de desarrollo $dev_version"
+                                echo "0. Salir"
+                                read -p "Eliga una opción: " OPCION_NGINX
+
+                                case "$OPCION_NGINX" in
+                                    1)
+                                        read -p "Ingrese el puerto en el que se instalará Nginx: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 443): " HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
+
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif [[ $? -eq 0 ]]; then
+                                            echo "El puerto $PORT esta ocupado en otro servicio."
+                                        else
+                                            install_server_http_ssl "https://nginx.org/download/" "nginx-$last_lts_version.tar.gz" "nginx-$last_lts_version" "nginx"
+                                            # Verificar la instalación de Nginx
+                                            /usr/local/nginx/sbin/nginx -v
+                                            # Ruta de la configuración del archivo
+                                            routeFileConfiguration="/usr/local/nginx"
+                                            configure_ssl_nginx "$routeFileConfiguration" "$PORT" "$HTTPS_PORT"
+                                            ps aux | grep nginx
+                                        fi
+                                    ;;
+                                    2)
+                                        read -p "Ingrese el puerto en el que se instalará Nginx: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 443): " HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
+
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif [[ $? -eq 0 ]]; then
+                                            echo "El puerto $PORT esta ocupado en otro servicio."
+                                        else
+                                            install_server_http_ssl "https://nginx.org/download/" "nginx-$dev_version.tar.gz" "nginx-$dev_version" "nginx"
+                                            # Verificar la instalación de Nginx
+                                            /usr/local/nginx/sbin/nginx -v
+                                            # Ruta de la configuración del archivo
+                                            routeFileConfiguration="/usr/local/nginx"
+                                            configure_ssl_nginx "$routeFileConfiguration" "$PORT" "$HTTPS_PORT"
+                                            ps aux | grep nginx
+                                        fi
+                                    ;;
+                                    0)
+                                        echo "Saliendo al menú..."
+                                    ;;
+                                    *)
+                                        echo "Opción no válida."
+                                    ;;
+                                esac
                             ;;
                             0)
                                 echo "Saliendo..."
