@@ -139,9 +139,9 @@ while [ "$OPCION" -ne 0 ]; do
                                             KEYSTORE_PATH="$CERT_DIR/keystore.jks"
                                             KEYSTORE_PASS="changeit"
                                             sudo sed -i "s/port=\"8080\"/port=\"$PORT\"/g" "$server_xml"
-                                            
+
                                             # Agregar el conector HTTPS si no está presente
-                                            if ! grep -q "Connector port=\"$HTTPS_PORT\"" "$SERVER_XML"; then
+                                            if ! grep -q "Connector port=\"$HTTPS_PORT\"" "$server_xml"; then
                                                 sudo sed -i "/<\/Service>/i \
                                                 <Connector port=\"$HTTPS_PORT\" protocol=\"org.apache.coyote.http11.Http11NioProtocol\" \n\
                                                         maxThreads=\"200\" SSLEnabled=\"true\"> \n\
@@ -150,7 +150,7 @@ while [ "$OPCION" -ne 0 ]; do
                                                                     type=\"RSA\" \n\
                                                                     certificateKeystorePassword=\"$KEYSTORE_PASS\"/> \n\
                                                     </SSLHostConfig> \n\
-                                                </Connector>" "$SERVER_XML"
+                                                </Connector>" "$server_xml"
                                             fi
 
                                             # Otorgar permisos de ejecución
