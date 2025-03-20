@@ -93,6 +93,36 @@ generate_ssl_cert() {
     echo "Certificado SSL autofirmado generado en $cert_dir"
 }
 
+generate_ssl_cert_tomcat(){
+    local cert_dir=$1
+    local keystore_pass="changeit"
+
+    # Crear directorios para certificados si no existen
+    sudo mkdir -p "$cert_dir"
+
+    # Generar clave privada y certificado autofirmado
+    sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout "$cert_dir/server.key" \
+        -out "$cert_dir/server.crt" \
+        -subj "/C=ES/ST=State/L=City/O=Organization/CN=localhost" \
+        > /dev/null 2>&1
+
+    echo "Certificado SSL generado en $cert_dir"
+
+    # Convertir el certificado y clave en un archivo PKCS12
+    sudo openssl pkcs12 -export -in "$cert_dir/server.crt" -inkey "$cert_dir/server.key" \
+        -out "$cert_dir/keystore.p12" -name tomcat -password pass:$keystore_pass \
+        > /dev/null 2>&1
+
+    # Convertir PKCS12 a Keystore JKS (formato requerido por Tomcat)
+    sudo keytool -importkeystore -destkeystore "$cert_dir/keystore.jks" \
+        -srckeystore "$cert_dir/keystore.p12" -srcstoretype PKCS12 \
+        -alias tomcat -deststorepass $keystore_pass -srcstorepass $keystore_pass \
+        > /dev/null 2>&1
+
+    echo "Keystore generado en $cert_dir/keystore.jks"
+}
+
 # Función para configurar SSL en Apache
 configure_ssl_apache() {
     local apache_root=$1
