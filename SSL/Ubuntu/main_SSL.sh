@@ -130,13 +130,29 @@ while [ "$OPCION" -ne 0 ]; do
                                             curl -s -O "https://dlcdn.apache.org/tomcat/tomcat-$fisrt_digit/v$last_lts_version/bin/apache-tomcat-$last_lts_version.tar.gz"
                                             tar -xzvf apache-tomcat-$last_lts_version.tar.gz
                                             sudo mv apache-tomcat-$last_lts_version /opt/tomcat
+
+                                            # Generar el certificado SSL y keystore
+                                            CERT_DIR="/opt/tomcat/conf"
+                                            generate_ssl_cert_tomcat "$CERT_DIR"
                                             # Modificar el puerto en server.xml
                                             server_xml="/opt/tomcat/conf/server.xml"
+                                            KEYSTORE_PATH="$CERT_DIR/keystore.jks"
+                                            KEYSTORE_PASS="changeit"
                                             sudo sed -i "s/port=\"8080\"/port=\"$PORT\"/g" "$server_xml"
-                                            sudo sed -i "s/port=\"8080\"/port=\"$HTTPS_PORT\"/g" "$server_xml"
-                                            # Cambiar el conector SSL para usar el puerto HTTPS
-                                            sudo sed -i "s/keystoreFile=\"\"/keystoreFile=\"\/opt\/tomcat\/conf\/keystore.jks\"/g" "$server_xml"
-                                            sudo sed -i "s/keystorePass=\"\"/keystorePass=\"changeit\"/g" "$server_xml"
+                                            
+                                            # Agregar el conector HTTPS si no está presente
+                                            if ! grep -q "Connector port=\"$HTTPS_PORT\"" "$SERVER_XML"; then
+                                                sudo sed -i "/<\/Service>/i \
+                                                <Connector port=\"$HTTPS_PORT\" protocol=\"org.apache.coyote.http11.Http11NioProtocol\" \n\
+                                                        maxThreads=\"200\" SSLEnabled=\"true\"> \n\
+                                                    <SSLHostConfig> \n\
+                                                        <Certificate certificateKeystoreFile=\"$KEYSTORE_PATH\" \n\
+                                                                    type=\"RSA\" \n\
+                                                                    certificateKeystorePassword=\"$KEYSTORE_PASS\"/> \n\
+                                                    </SSLHostConfig> \n\
+                                                </Connector>" "$SERVER_XML"
+                                            fi
+
                                             # Otorgar permisos de ejecución
                                             sudo chmod +x /opt/tomcat/bin/*.sh
                                             # Iniciar Tomcat
