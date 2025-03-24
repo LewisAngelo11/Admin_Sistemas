@@ -5,8 +5,9 @@
 source Funciones_SSL.sh
 source Funciones_HTTP.sh
 
-install_opnessl
+# install_opnessl
 config_vsftpd
+ftp_url="ftp://localhost"
 
 OPCION=-1
 
@@ -26,6 +27,81 @@ while [ "$OPCION" -ne 0 ]; do
                 "SI")
                     # Conectarse a FTP con certificación SSL
                     echo "Conectandose al servidor FTPS..."
+                    OPCION_FTP=""
+                    while [ "$OPCION_FTP" -eq "salir" ]; do
+                    
+                        echo "Menú de instalación en FTP"
+                        echo "Servicios HTTP disponibles:"
+                        curl $ftp_url/Ubuntu/
+                        read -p "Elija un servicio: " OPCION_FTP
+
+                        case "$OPCION_FTP" in
+                            "apache")
+                                echo "Instalar Apache desde FTP..."
+                                curl $ftp_url/Ubuntu/apache/
+                                downloadsApache="https://downloads.apache.org/httpd/"
+                                page_apache=$(get_html "$downloadsApache")
+                                mapfile -t versions < <(get_lts_version "$downloadsApache" 0)
+                                last_lts_version=${versions[0]}
+
+                                echo "¿Que versión de apache desea instalar"
+                                echo "1. Última versión LTS $last_lts_version"
+                                echo "2. Versión de desarrollo (No tiene)"
+                                echo "0. Salir"
+                                read -p "Eliga una opción: " OPCION_APACHE
+
+                                case "$OPCION_APACHE" in
+                                    1)
+                                        # Pedir los puertos al usuario
+                                        read -p "Ingrese el puerto en el que se instalará Apache: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 443): " HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
+
+                                        # Verificar si los puertos están disponibles
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif ss -tuln | grep -q ":$HTTPS_PORT "; then
+                                            echo "El puerto $HTTPS_PORT esta ocupado en otro servicio."
+                                        else
+                                            curl "$ftp_url/Ubuntu/apache/httpd-$last_lts_version.tar.gz" -O
+                                            # Descomprimir archivo de instalación
+                                            sudo tar -xvzf httpd-$last_lts_version.tar.gz > /dev/null 2>&1
+                                            cd "httpd-$last_lts_version"
+                                            ./configure --prefix=/usr/local/apache > /dev/null 2>&1
+                                            make > /dev/null 2>&1
+                                            sudo make install > /dev/null 2>&1
+                                            # Ruta de la configuración del archivo
+                                            routeFileConfiguration="/usr/local/apache2"
+                                            configure_ssl_apache "$routeFileConfiguration" "$PORT" "$HTTPS_PORT"
+                                            sudo /usr/local/apache2/bin/apachectl restart
+                                            echo "Configuracion lista"
+                                        fi
+                                    ;;
+                                    2)
+                                        echo "Apache no cuenta con versión de desarrollo."
+                                    ;;
+                                    0)
+                                        echo "Saliendo al menú principal..."
+                                    ;;
+                                    *)
+                                        echo "Opción no válida."
+                                    ;;
+                                esac
+                            ;;
+                            "tomcat")
+                                echo "Instalar Tomcat desde FTP..."
+
+                            ;;
+                            "nginx")
+                                echo "Instalar Nginx desde FTP..."
+
+                            ;;
+                            *)
+                                echo "Opción no válida, debe ingresar el nombre de un servicio o escribir 'salir'."
+                            ;;
+                        esac
+                    done
                 ;;
                 "NO")
                     # Conectarse a FTP sin certificación SSL

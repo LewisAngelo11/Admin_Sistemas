@@ -37,7 +37,7 @@ while($true){
                 Write-Output "0. Salir"
                 $OPCION_CADDY = Read-Host -p "Eliga una opción"
 
-                if ($OPCION_CADDY -notmatch "^\d+$") {
+                if ($PORT -notmatch "^\d+$") {
                     Write-Output "Debes ingresar un número."
                 } elseif (VerifyPortsReserved -port $PORT) {
                     Write-Host "El puerto $PORT está reservado para un servicio ."
