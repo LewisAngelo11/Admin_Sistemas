@@ -40,10 +40,6 @@ while [ "$OPCION" -ne 0 ]; do
                             "apache")
                                 echo "Instalar Apache desde FTP..."
                                 curl --ftp-ssl -k $ftp_url/ubuntu/Apache/
-                                downloadsApache="https://downloads.apache.org/httpd/"
-                                page_apache=$(get_html "$downloadsApache")
-                                mapfile -t versions < <(get_lts_version "$downloadsApache" 0)
-                                last_lts_version=${versions[0]}
 
                                 echo "¿Que versión de apache desea instalar"
                                 echo "1. Última versión LTS $last_lts_version"
