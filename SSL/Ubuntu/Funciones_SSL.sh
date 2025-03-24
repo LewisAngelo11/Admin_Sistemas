@@ -5,8 +5,37 @@ install_opnessl(){
     sudo apt update & sudo apt install openssl
 }
 
+configurar_ssl_vsftpd() {
+    local cert_path="/etc/ssl/certs/vsftpd.crt"
+    local key_path="/etc/ssl/private/vsftpd.key"
+
+    echo "Generando certificado SSL para vsftpd..."
+
+    # Crear el certificado y la clave privada
+    sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+        -keyout "$key_path" \
+        -out "$cert_path" \
+        -subj "/C=US/ST=Sinaloa/L=LosMochis/O=MyCompany/CN=ftp.example.com"
+
+    # Ajustar permisos
+    sudo chmod 600 "$key_path"
+    sudo chmod 644 "$cert_path"
+
+    echo "Certificado SSL generado en:"
+    echo " - Certificado: $cert_path"
+    echo " - Clave privada: $key_path"
+
+    echo "Reiniciando vsftpd..."
+    sudo systemctl restart vsftpd
+
+    echo "Proceso completado. Verifique que vsftpd esté funcionando con SSL."
+}
+
 # Función para configurar el archivo vsftpd.conf
 config_vsftpd() {
+
+    local rootCertificate="/etc/ssl/certs/vsftpd.crt"
+    local rootPrivateKey="/etc/ssl/private/vsftpd.key"
     # Hacer un respaldo de la configuración original
     sudo cp /etc/vsftpd.conf /etc/vsftpd.conf.bak
 
@@ -28,6 +57,15 @@ connect_from_port_20=YES
 pasv_min_port=40000
 pasv_max_port=50000
 ssl_enable=YES
+allow_anon_ssl=YES
+force_local_data_ssl=YES
+force_local_logins_ssl=YES
+ssl_tlsv1=YES
+ssl_sslv2=NO
+ssl_sslv3=NO
+require_ssl_reuse=NO
+rsa_cert_file=$rootCertificate
+rsa_private_key_file=$rootPrivateKey
 EOF
 
     # Reinicio el servicio FTP
