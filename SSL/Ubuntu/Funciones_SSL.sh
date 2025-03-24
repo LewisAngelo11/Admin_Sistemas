@@ -45,17 +45,15 @@ listen=YES
 anonymous_enable=YES
 local_enable=YES
 write_enable=YES
-anon_root=/srv/ftp
 chroot_local_user=NO
 allow_writeable_chroot=YES
-anon_world_readable_only=YES
-pasv_enable=YES
+anon_world_readable_only=NO
 dirmessage_enable=YES
 use_localtime=YES
 xferlog_enable=YES
 connect_from_port_20=YES
-pasv_min_port=40000
-pasv_max_port=50000
+
+# Configuración SSL
 ssl_enable=YES
 allow_anon_ssl=YES
 force_local_data_ssl=YES
@@ -66,6 +64,13 @@ ssl_sslv3=NO
 require_ssl_reuse=NO
 rsa_cert_file=$rootCertificate
 rsa_private_key_file=$rootPrivateKey
+
+# Configuración de puertos
+listen_port=990
+implicit_ssl=YES
+pasv_enable=YES
+pasv_min_port=40000
+pasv_max_port=50000
 EOF
 
     # Reinicio el servicio FTP

@@ -8,7 +8,7 @@ source Funciones_HTTP.sh
 # install_opnessl
 configurar_ssl_vsftpd
 config_vsftpd
-ftp_url="ftp://localhost"
+ftp_url="ftps://localhost"
 
 OPCION=-1
 
@@ -29,17 +29,17 @@ while [ "$OPCION" -ne 0 ]; do
                     # Conectarse a FTP con certificación SSL
                     echo "Conectandose al servidor FTPS..."
                     OPCION_FTP=""
-                    while [ "$OPCION_FTP" -eq "salir" ]; do
+                    while [ "$OPCION_FTP" != "salir" ]; do
                     
                         echo "Menú de instalación en FTP"
                         echo "Servicios HTTP disponibles:"
-                        curl $ftp_url/Ubuntu/
+                        curl --ftp-ssl -k $ftp_url/Ubuntu/
                         read -p "Elija un servicio: " OPCION_FTP
 
                         case "$OPCION_FTP" in
                             "apache")
                                 echo "Instalar Apache desde FTP..."
-                                curl $ftp_url/Ubuntu/apache/
+                                curl --ftp-ssl -k $ftp_url/ubuntu/Apache/
                                 downloadsApache="https://downloads.apache.org/httpd/"
                                 page_apache=$(get_html "$downloadsApache")
                                 mapfile -t versions < <(get_lts_version "$downloadsApache" 0)
