@@ -33,13 +33,16 @@ while [ "$OPCION" -ne 0 ]; do
                     
                         echo "Menú de instalación en FTP"
                         echo "Servicios HTTP disponibles:"
-                        curl --ftp-ssl -k $ftp_url/Ubuntu/
+                        curl --ftp-ssl -k $ftp_url/http/ubuntu/
                         read -p "Elija un servicio: " OPCION_FTP
 
                         case "$OPCION_FTP" in
                             "apache")
                                 echo "Instalar Apache desde FTP..."
-                                curl --ftp-ssl -k $ftp_url/ubuntu/Apache/
+                                curl --ftp-ssl -k $ftp_url/http/ubuntu/Apache/
+                                FTPApache="h$ftp_url/http/ubuntu/Apache/"
+                                mapfile -t versions < <(get_lts_version "$FTPApache" 0)
+                                last_lts_version=${versions[0]}
 
                                 echo "¿Que versión de apache desea instalar"
                                 echo "1. Última versión LTS $last_lts_version"
