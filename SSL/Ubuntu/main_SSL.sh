@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Apache, Tomcat y Nginx funcionan con SSL desde web
-# Apache y Nginx ya funcionan con SSL desde el servidor FTP, solo falta Tomcat
+# Apache, Tomcat y Nginx ya funcionan con SSL desde el servidor FTP.
+# Solo falta de implementar Tomcat y Nginx sin SSL desde el servidor FTP
 
 source Funciones_SSL.sh
 source Funciones_HTTP.sh
@@ -27,7 +28,6 @@ while [ "$OPCION" -ne 0 ]; do
 
             case "$OPCION_SSL" in
                 "si")
-                    # Conectarse a FTP con certificación SSL
                     echo "Conectandose al servidor FTPS..."
                     OPCION_FTP=""
                     while [ "$OPCION_FTP" != "salir" ]; do
@@ -157,13 +157,56 @@ while [ "$OPCION" -ne 0 ]; do
                                         fi
                                     ;;
                                     2)
+                                        read -p "Ingrese el puerto en el que se instalará Tomcat: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 8443):" HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
 
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif ss -tuln | grep -q ":$HTTPS_PORT "; then
+                                            echo "El puerto $HTTPS_PORT esta ocupado en otro servicio."
+                                        else
+                                            # Instalar Java ya que Tomcat lo requiere
+                                            sudo apt update
+                                            sudo apt install default-jdk -y
+                                            java -version
+                                            curl -k -o apache-tomcat-$dev_version.tar.gz $ftp_url/http/ubuntu/Tomcat/apache-tomcat-$dev_version.tar.gz
+                                            tar -xzvf apache-tomcat-$dev_version.tar.gz
+                                            sudo mv apache-tomcat-$dev_version /opt/tomcat
+
+                                            # Generar el certificado SSL y keystore
+                                            CERT_DIR="/opt/tomcat/conf"
+                                            generate_ssl_cert_tomcat "$CERT_DIR"
+                                            # Modificar el puerto en server.xml
+                                            server_xml="/opt/tomcat/conf/server.xml"
+                                            KEYSTORE_PATH="conf/keystore.jks"
+                                            KEYSTORE_PASS="changeit"
+                                            sudo sed -i "s/port=\"8080\"/port=\"$PORT\"/g" "$server_xml"
+
+                                            # Agregar el conector HTTPS si no está presente
+                                            if ! grep -q "Connector port=\"$HTTPS_PORT\"" "$server_xml"; then
+                                                sudo sed -i "/<\/Service>/i \
+                                                <Connector port=\"$HTTPS_PORT\" protocol=\"org.apache.coyote.http11.Http11NioProtocol\" \n\
+                                                        maxThreads=\"200\" SSLEnabled=\"true\"> \n\
+                                                    <SSLHostConfig> \n\
+                                                        <Certificate certificateKeystoreFile=\"$KEYSTORE_PATH\" \n\
+                                                                    type=\"RSA\" \n\
+                                                                    certificateKeystorePassword=\"$KEYSTORE_PASS\"/> \n\
+                                                    </SSLHostConfig> \n\
+                                                </Connector>" "$server_xml"
+                                            fi
+                                            # Otorgar permisos de ejecución
+                                            sudo chmod +x /opt/tomcat/bin/*.sh
+                                            # Iniciar Tomcat
+                                            /opt/tomcat/bin/startup.sh
+                                        fi
                                     ;;
                                     0)
-
+                                        echo "Saliendo al menú..."
                                     ;;
                                     *)
-
+                                        echo "Opción no válida"
                                     ;;
                                 esac
                             ;;
@@ -260,8 +303,87 @@ while [ "$OPCION" -ne 0 ]; do
                     done
                 ;;
                 "no")
-                    # Conectarse a FTP sin certificación SSL
                     echo "Conectandose al servidor FTP..."
+                    echo "Conectandose al servidor FTPS..."
+                    OPCION_FTP=""
+                    while [ "$OPCION_FTP" != "salir" ]; do
+                        echo "Menú de instalación en FTP"
+                        echo "Servicios HTTP disponibles:"
+                        curl --ftp-ssl -k $ftp_url/http/ubuntu/
+                        read -p "Elija un servicio 'apache' 'tomcat' 'nginx': " OPCION_FTP
+
+                        case "$OPCION_FTP" in
+                            "apache")
+                                echo "Instalar Apache desde FTP..."
+                                curl -k $ftp_url/http/ubuntu/Apache/
+                                downloadsApache="https://downloads.apache.org/httpd/"
+                                page_apache=$(get_html "$downloadsApache")
+                                mapfile -t versions < <(get_lts_version "$downloadsApache" 0)
+                                last_lts_version=${versions[0]}
+
+                                echo "¿Que versión de apache desea instalar"
+                                echo "1. Versión LTS disponible en el servidor FTP $last_lts_version"
+                                echo "2. Versión de desarrollo disponible en el servidor FTP."
+                                echo "0. Salir"
+                                read -p "Eliga una opción: " OPCION_APACHE
+
+                                case "$OPCION_APACHE" in
+                                    1)
+                                        # Pedir el puerto al usuario
+                                        read -p "Ingrese el puerto en el que se instalará Apache: " PORT
+                                        verificar_puerto_reservado -puerto $PORT
+
+                                        # Verificar si el puerto están disponibles
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        else
+                                            curl -k -o httpd-$last_lts_version.tar.gz $ftp_url/http/ubuntu/Apache/httpd-$last_lts_version.tar.gz
+                                            # Descomprimir el archivo
+                                            sudo tar -xvzf httpd-$last_lts_version.tar.gz > /dev/null 2>&1
+                                            # Entrar a la carpeta descomprimida
+                                            cd /home/luissoto11/"httpd-$last_lts_version"
+                                            # Compilar el archivo
+                                            ./configure --prefix=/usr/local/"apache2" > /dev/null 2>&1
+                                            # Instalar servicio
+                                            make -s > /dev/null 2>&1
+                                            sudo make install > /dev/null 2>&1
+                                            # Verificar la instalacón
+                                            /usr/local/apache2/bin/httpd -v
+                                            # Ruta de la configuración del archivo
+                                            routeFileConfiguration="/usr/local/apache2/conf/httpd.conf"
+                                            # Remover el puerto en uso actual
+                                            sudo sed -i '/^Listen/d' $routeFileConfiguration
+                                            # Añadir puerto que eligio el usuario
+                                            sudo printf "Listen $PORT" >> $routeFileConfiguration
+                                            # Comprobar si el puerto esta escuchando
+                                            sudo grep -i "Listen $PORT" $routeFileConfiguration
+                                            sudo /usr/local/apache2/bin/apachectl restart
+                                    ;;
+                                    2)
+                                        echo "Apache no cuenta con versión de desarrollo."
+                                    ;;
+                                    0)
+                                        echo "Saliendo al menú..."
+                                    ;;
+                                    *)
+                                        echo "Opción no válida."
+                                    ;;
+                                esac
+                            ;;
+                            "tomcat")
+                                # Instalar tomcat sin SSL desde el FTP
+                            ;;
+                            "nginx")
+                                # Instalar nginx sin SSL desde el FTP
+                            ;;
+                            "salir")
+                                echo "Saliendo..."
+                            ;;
+                            *)
+                                echo "Opción no válida."
+                            ;;
+                        esac
+                    done
                 ;;
                 *)
                     echo "Opción inválida (SI/NO)"
@@ -270,10 +392,10 @@ while [ "$OPCION" -ne 0 ]; do
         ;;
         # Opción de instalación por la Web
         2)
-            read -p "¿Deseas incluir SSL en la configuración del servicio HTTP? (SI/NO) " OPCION_SSL
+            read -p "¿Deseas incluir SSL en la configuración del servicio HTTP? (si/no) " OPCION_SSL
 
             case "$OPCION_SSL" in
-                "SI")
+                "si")
                     echo "Instalar el servicio HTTP con SSL..."
                     OPCION_HTTP=-1
                     while [ "$OPCION_HTTP" -ne 0 ]; do
@@ -518,7 +640,7 @@ while [ "$OPCION" -ne 0 ]; do
                         esac
                     done
                 ;;
-                "NO")
+                "no")
                     OPCION_HTTP=-1
                     while [ "$OPCION_HTTP" -ne 0 ]; do
                         echo "¿Qué servicio desea instalar?"
