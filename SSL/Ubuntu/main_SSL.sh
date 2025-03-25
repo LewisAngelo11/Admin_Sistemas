@@ -65,7 +65,13 @@ while [ "$OPCION" -ne 0 ]; do
                                         elif ss -tuln | grep -q ":$HTTPS_PORT "; then
                                             echo "El puerto $HTTPS_PORT esta ocupado en otro servicio."
                                         else
-                                            install_server_http_ssl "$ftp_url/ubuntu/Apache/" "httpd-$last_lts_version.tar.gz" "httpd-$last_lts_version" "apache2"
+                                            curl "$ftp_url/http/ubuntu/Apache/httpd-$last_lts_version.tar.gz"
+                                            # Descomprimir el archivo
+                                            sudo tar -xvzf httpd-$last_lts_version.tar.gz > /dev/null 2>&1
+                                            # Entrar a la carpeta descomprimida
+                                            cd "httpd-$last_lts_version"
+                                            make > /dev/null 2>&1
+                                            sudo make install > /dev/null 2>&1
                                             # Verificar la instalacón
                                             /usr/local/apache2/bin/httpd -v
                                             # Ruta de la configuración del archivo

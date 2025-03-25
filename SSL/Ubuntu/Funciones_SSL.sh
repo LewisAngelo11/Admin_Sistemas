@@ -52,6 +52,8 @@ dirmessage_enable=YES
 use_localtime=YES
 xferlog_enable=YES
 connect_from_port_20=YES
+anon_upload_enable=YES
+anon_mkdir_write_enable=YES
 
 # Configuración SSL
 ssl_enable=YES
