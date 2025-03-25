@@ -6,7 +6,7 @@ source Funciones_SSL.sh
 source Funciones_HTTP.sh
 
 # install_opnessl
-configurar_ssl_vsftpd
+# configurar_ssl_vsftpd
 config_vsftpd
 ftp_url="ftps://localhost"
 
@@ -22,10 +22,10 @@ while [ "$OPCION" -ne 0 ]; do
     case "$OPCION" in
         # Opción de instalación por FTP
         1)
-            read -p "¿Deseas usar una conexión segura (SSL) para FTP? (SI/NO) " OPCION_SSL
+            read -p "¿Deseas usar una conexión segura (SSL) para FTP? (si/no) " OPCION_SSL
 
             case "$OPCION_SSL" in
-                "SI")
+                "si")
                     # Conectarse a FTP con certificación SSL
                     echo "Conectandose al servidor FTPS..."
                     OPCION_FTP=""
@@ -34,19 +34,20 @@ while [ "$OPCION" -ne 0 ]; do
                         echo "Menú de instalación en FTP"
                         echo "Servicios HTTP disponibles:"
                         curl --ftp-ssl -k $ftp_url/http/ubuntu/
-                        read -p "Elija un servicio: " OPCION_FTP
+                        read -p "Elija un servicio 'apache' 'tomcat' 'nginx': " OPCION_FTP
 
                         case "$OPCION_FTP" in
                             "apache")
                                 echo "Instalar Apache desde FTP..."
                                 curl --ftp-ssl -k $ftp_url/http/ubuntu/Apache/
-                                FTPApache="h$ftp_url/http/ubuntu/Apache/"
-                                mapfile -t versions < <(get_lts_version "$FTPApache" 0)
+                                downloadsApache="https://downloads.apache.org/httpd/"
+                                page_apache=$(get_html "$downloadsApache")
+                                mapfile -t versions < <(get_lts_version "$downloadsApache" 0)
                                 last_lts_version=${versions[0]}
 
                                 echo "¿Que versión de apache desea instalar"
-                                echo "1. Última versión LTS $last_lts_version"
-                                echo "2. Versión de desarrollo (No tiene)"
+                                echo "1. Versión LTS disponible en el servidor FTP $last_lts_version"
+                                echo "2. Versión de desarrollo disponible en el servidor FTP."
                                 echo "0. Salir"
                                 read -p "Eliga una opción: " OPCION_APACHE
 
@@ -64,13 +65,9 @@ while [ "$OPCION" -ne 0 ]; do
                                         elif ss -tuln | grep -q ":$HTTPS_PORT "; then
                                             echo "El puerto $HTTPS_PORT esta ocupado en otro servicio."
                                         else
-                                            curl "$ftp_url/Ubuntu/apache/httpd-$last_lts_version.tar.gz" -O
-                                            # Descomprimir archivo de instalación
-                                            sudo tar -xvzf httpd-$last_lts_version.tar.gz > /dev/null 2>&1
-                                            cd "httpd-$last_lts_version"
-                                            ./configure --prefix=/usr/local/apache > /dev/null 2>&1
-                                            make > /dev/null 2>&1
-                                            sudo make install > /dev/null 2>&1
+                                            install_server_http_ssl "$ftp_url/ubuntu/Apache/" "httpd-$last_lts_version.tar.gz" "httpd-$last_lts_version" "apache2"
+                                            # Verificar la instalacón
+                                            /usr/local/apache2/bin/httpd -v
                                             # Ruta de la configuración del archivo
                                             routeFileConfiguration="/usr/local/apache2"
                                             configure_ssl_apache "$routeFileConfiguration" "$PORT" "$HTTPS_PORT"
@@ -103,7 +100,7 @@ while [ "$OPCION" -ne 0 ]; do
                         esac
                     done
                 ;;
-                "NO")
+                "no")
                     # Conectarse a FTP sin certificación SSL
                     echo "Conectandose al servidor FTP..."
                 ;;
