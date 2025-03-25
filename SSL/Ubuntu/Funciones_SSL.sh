@@ -15,7 +15,7 @@ configurar_ssl_vsftpd() {
     sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout "$key_path" \
         -out "$cert_path" \
-        -subj "/C=US/ST=Sinaloa/L=LosMochis/O=MyCompany/CN=ftp.example.com"
+        -subj "/C=MX/ST=Sinaloa/L=LosMochis/O=MyCompany/CN=ftp.example.com"
 
     # Ajustar permisos
     sudo chmod 600 "$key_path"

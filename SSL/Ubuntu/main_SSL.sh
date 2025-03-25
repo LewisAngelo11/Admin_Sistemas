@@ -39,7 +39,7 @@ while [ "$OPCION" -ne 0 ]; do
                         case "$OPCION_FTP" in
                             "apache")
                                 echo "Instalar Apache desde FTP..."
-                                curl --ftp-ssl -k $ftp_url/http/ubuntu/Apache/
+                                curl -k $ftp_url/http/ubuntu/Apache/
                                 downloadsApache="https://downloads.apache.org/httpd/"
                                 page_apache=$(get_html "$downloadsApache")
                                 mapfile -t versions < <(get_lts_version "$downloadsApache" 0)
@@ -65,11 +65,13 @@ while [ "$OPCION" -ne 0 ]; do
                                         elif ss -tuln | grep -q ":$HTTPS_PORT "; then
                                             echo "El puerto $HTTPS_PORT esta ocupado en otro servicio."
                                         else
-                                            curl "$ftp_url/http/ubuntu/Apache/httpd-$last_lts_version.tar.gz"
+                                            curl -k -o httpd-$last_lts_version.tar.gz $ftp_url/http/ubuntu/Apache/httpd>
                                             # Descomprimir el archivo
                                             sudo tar -xvzf httpd-$last_lts_version.tar.gz > /dev/null 2>&1
                                             # Entrar a la carpeta descomprimida
-                                            cd "httpd-$last_lts_version"
+                                            cd /home/luissoto11/"httpd-$last_lts_version"
+                                            # Compilar Apache con soporte SSL
+                                            ./configure --prefix=/usr/local/"apache2" --enable-ssl --enable-so > /dev/n>
                                             make > /dev/null 2>&1
                                             sudo make install > /dev/null 2>&1
                                             # Verificar la instalacón
