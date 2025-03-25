@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Apache, Tomcat y Nginx funcionan con SSL
-# Apache ya funciona con SSL desde el servidor FTP
+# Apache, Tomcat y Nginx funcionan con SSL desde web
+# Apache y Nginx ya funcionan con SSL desde el servidor FTP, solo falta Tomcat
 
 source Funciones_SSL.sh
 source Funciones_HTTP.sh
@@ -131,7 +131,7 @@ while [ "$OPCION" -ne 0 ]; do
                                             # Entrar a la carpeta descomprimida
                                             cd /home/luissoto11/"nginx-$last_lts_version"
                                             # Compilar Nginx con soporte SSL
-                                            ./configure --prefix=/usr/local/"$servicio" \
+                                            ./configure --prefix=/usr/local/"nginx" \
                                                 --with-http_ssl_module \
                                                 --with-http_v2_module > /dev/null 2>&1
                                             # Instalar el servicio
