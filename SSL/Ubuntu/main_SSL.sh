@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# Apache, Tomcat y Nginx funcionan con SSL, solo falta agregar el servicio FTP
+# Apache, Tomcat y Nginx funcionan con SSL
+# Apache ya funciona con SSL desde el servidor FTP
 
 source Funciones_SSL.sh
 source Funciones_HTTP.sh
 
 # install_opnessl
-# configurar_ssl_vsftpd
+configurar_ssl_vsftpd
 config_vsftpd
 ftp_url="ftps://localhost"
 
@@ -65,13 +66,14 @@ while [ "$OPCION" -ne 0 ]; do
                                         elif ss -tuln | grep -q ":$HTTPS_PORT "; then
                                             echo "El puerto $HTTPS_PORT esta ocupado en otro servicio."
                                         else
-                                            curl -k -o httpd-$last_lts_version.tar.gz $ftp_url/http/ubuntu/Apache/httpd>
+                                            curl -k -o httpd-$last_lts_version.tar.gz $ftp_url/http/ubuntu/Apache/httpd-$last_lts_version.tar.gz
                                             # Descomprimir el archivo
                                             sudo tar -xvzf httpd-$last_lts_version.tar.gz > /dev/null 2>&1
                                             # Entrar a la carpeta descomprimida
                                             cd /home/luissoto11/"httpd-$last_lts_version"
                                             # Compilar Apache con soporte SSL
-                                            ./configure --prefix=/usr/local/"apache2" --enable-ssl --enable-so > /dev/n>
+                                            ./configure --prefix=/usr/local/"apache2" --enable-ssl --enable-so > /dev/null 2>&1
+                                            # Instalar el servicio
                                             make > /dev/null 2>&1
                                             sudo make install > /dev/null 2>&1
                                             # Verificar la instalacón
@@ -100,7 +102,60 @@ while [ "$OPCION" -ne 0 ]; do
                             ;;
                             "nginx")
                                 echo "Instalar Nginx desde FTP..."
+                                curl -k $ftp_url/http/ubuntu/Nginx/
+                                downloadsNginx="https://nginx.org/en/download.html"
+                                dev_version=$(get_lts_version "$downloadsNginx" 0)
+                                last_lts_version=$(get_lts_version "$downloadsNginx" 1)
 
+                                echo "¿Que versión de nginx desea instalar"
+                                echo "1. Versión LTS disponible en el servidor FTP $last_lts_version"
+                                echo "2. Versión de desarrollo disponible en el servidor FTP $dev_version"
+                                echo "0. Salir"
+                                read -p "Eliga una opción: " OPCION_NGINX
+
+                                case "$OPCION_NGINX" in
+                                    1)
+                                        read -p "Ingrese el puerto en el que se instalará Nginx: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 443): " HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
+
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif [[ $? -eq 0 ]]; then
+                                            echo "El puerto $PORT esta ocupado en otro servicio."
+                                        else
+                                            curl -k -o nginx-$last_lts_version.tar.gz $ftp_url/http/ubuntu/Nginx/nginx-$last_lts_version.tar.gz
+                                            # Descomprimir el archivo
+                                            sudo tar -xvzf nginx-$last_lts_version.tar.gz > /dev/null 2>&1
+                                            # Entrar a la carpeta descomprimida
+                                            cd /home/luissoto11/"nginx-$last_lts_version"
+                                            # Compilar Nginx con soporte SSL
+                                            ./configure --prefix=/usr/local/"$servicio" \
+                                                --with-http_ssl_module \
+                                                --with-http_v2_module > /dev/null 2>&1
+                                            # Instalar el servicio
+                                            make > /dev/null 2>&1
+                                            sudo make install > /dev/null 2>&1
+                                            # Verificar la instalación de Nginx
+                                            /usr/local/nginx/sbin/nginx -v
+                                            # Ruta de la configuración del archivo
+                                            routeFileConfiguration="/usr/local/nginx"
+                                            configure_ssl_nginx "$routeFileConfiguration" "$PORT" "$HTTPS_PORT"
+                                            ps aux | grep nginx
+                                            echo "Configuracion lista"
+                                        fi
+                                    ;;
+                                    2)
+
+                                    ;;
+                                    0)
+
+                                    ;;
+                                    *)
+                                        echo "Opción no válida."
+                                    ;;
+                                esac
                             ;;
                             *)
                                 echo "Opción no válida, debe ingresar el nombre de un servicio o escribir 'salir'."
