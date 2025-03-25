@@ -98,7 +98,74 @@ while [ "$OPCION" -ne 0 ]; do
                             ;;
                             "tomcat")
                                 echo "Instalar Tomcat desde FTP..."
+                                curl -k $ftp_url/http/ubuntu/Tomcat/
+                                downloadsTomcat="https://tomcat.apache.org/index.html"
+                                dev_version=$(get_lts_version "$downloadsTomcat" 0)
+                                last_lts_version=$(get_lts_version "$downloadsTomcat" 1)
 
+                                echo "¿Que versión de Tomcat desea instalar"
+                                echo "1. Versión LTS disponible en el servidor FTP $last_lts_version"
+                                echo "2. Versión disponible en el servidor FTP $dev_version"
+                                echo "0. Salir"
+                                read -p "Eliga una opción: " OPCION_TOMCAT
+
+                                case "$OPCION_TOMCAT" in
+                                    1)
+                                        read -p "Ingrese el puerto en el que se instalará Tomcat: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 8443):" HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
+
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif ss -tuln | grep -q ":$HTTPS_PORT "; then
+                                            echo "El puerto $HTTPS_PORT esta ocupado en otro servicio."
+                                        else
+                                            # Instalar Java ya que Tomcat lo requiere
+                                            sudo apt update
+                                            sudo apt install default-jdk -y
+                                            java -version
+                                            curl -k -o apache-tomcat-$last_lts_version.tar.gz $ftp_url/http/ubuntu/Tomcat/apache-tomcat-$last_lts_version.tar.gz
+                                            tar -xzvf apache-tomcat-$last_lts_version.tar.gz
+                                            sudo mv apache-tomcat-$last_lts_version /opt/tomcat
+
+                                            # Generar el certificado SSL y keystore
+                                            CERT_DIR="/opt/tomcat/conf"
+                                            generate_ssl_cert_tomcat "$CERT_DIR"
+                                            # Modificar el puerto en server.xml
+                                            server_xml="/opt/tomcat/conf/server.xml"
+                                            KEYSTORE_PATH="conf/keystore.jks"
+                                            KEYSTORE_PASS="changeit"
+                                            sudo sed -i "s/port=\"8080\"/port=\"$PORT\"/g" "$server_xml"
+
+                                            # Agregar el conector HTTPS si no está presente
+                                            if ! grep -q "Connector port=\"$HTTPS_PORT\"" "$server_xml"; then
+                                                sudo sed -i "/<\/Service>/i \
+                                                <Connector port=\"$HTTPS_PORT\" protocol=\"org.apache.coyote.http11.Http11NioProtocol\" \n\
+                                                        maxThreads=\"200\" SSLEnabled=\"true\"> \n\
+                                                    <SSLHostConfig> \n\
+                                                        <Certificate certificateKeystoreFile=\"$KEYSTORE_PATH\" \n\
+                                                                    type=\"RSA\" \n\
+                                                                    certificateKeystorePassword=\"$KEYSTORE_PASS\"/> \n\
+                                                    </SSLHostConfig> \n\
+                                                </Connector>" "$server_xml"
+                                            fi
+                                            # Otorgar permisos de ejecución
+                                            sudo chmod +x /opt/tomcat/bin/*.sh
+                                            # Iniciar Tomcat
+                                            /opt/tomcat/bin/startup.sh
+                                        fi
+                                    ;;
+                                    2)
+
+                                    ;;
+                                    0)
+
+                                    ;;
+                                    *)
+
+                                    ;;
+                                esac
                             ;;
                             "nginx")
                                 echo "Instalar Nginx desde FTP..."
@@ -147,10 +214,39 @@ while [ "$OPCION" -ne 0 ]; do
                                         fi
                                     ;;
                                     2)
+                                        read -p "Ingrese el puerto en el que se instalará Nginx: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 443): " HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
 
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif [[ $? -eq 0 ]]; then
+                                            echo "El puerto $PORT esta ocupado en otro servicio."
+                                        else
+                                            curl -k -o nginx-$dev_version.tar.gz $ftp_url/http/ubuntu/Nginx/nginx-$dev_version.tar.gz
+                                            # Descomprimir el archivo
+                                            sudo tar -xvzf nginx-$dev_version.tar.gz > /dev/null 2>&1
+                                            # Entrar a la carpeta descomprimida
+                                            cd /home/luissoto11/"nginx-$dev_version"
+                                            # Compilar Nginx con soporte SSL
+                                            ./configure --prefix=/usr/local/"nginx" \
+                                                --with-http_ssl_module \
+                                                --with-http_v2_module > /dev/null 2>&1
+                                            # Instalar el servicio
+                                            make > /dev/null 2>&1
+                                            sudo make install > /dev/null 2>&1
+                                            # Verificar la instalación de Nginx
+                                            /usr/local/nginx/sbin/nginx -v
+                                            # Ruta de la configuración del archivo
+                                            routeFileConfiguration="/usr/local/nginx"
+                                            configure_ssl_nginx "$routeFileConfiguration" "$PORT" "$HTTPS_PORT"
+                                            ps aux | grep nginx
+                                            echo "Configuracion lista"
+                                        fi
                                     ;;
                                     0)
-
+                                        echo "Saliendo al menú..."
                                     ;;
                                     *)
                                         echo "Opción no válida."
@@ -227,6 +323,7 @@ while [ "$OPCION" -ne 0 ]; do
                                     ;;
                                     2)
                                         echo "Apache no cuenta con versión de desarrollo."
+                                        echo "Saliendo al menú principal..."
                                     ;;
                                     0)
                                         echo "Saliendo al menú principal..."
