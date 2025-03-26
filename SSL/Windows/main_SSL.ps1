@@ -1,5 +1,11 @@
-# . C:\Users\Administrador\Documents\Funciones_SSL.ps1
+. C:\Users\Administrador\Documents\Funciones_SSL.ps1
 . C:\Users\Administrador\Documents\Funciones_HTTP.ps1
+
+# Generar certificado y habilitar SSL
+$certificado = "C3B6B652E357C09F0895493D1601EFC3EAFCF251"
+Habilitar-SSL -numeroCert $certificado
+
+Restart-WebItem "IIS:\Sites\FTP Site"
 
 while ($true) {
     Write-Host "¿Donde desea instalar el servicio?"
