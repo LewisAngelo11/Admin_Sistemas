@@ -2,7 +2,7 @@
 
 # Apache, Tomcat y Nginx funcionan con SSL desde web
 # Apache, Tomcat y Nginx ya funcionan con SSL desde el servidor FTP.
-# Solo falta de implementar Tomcat y Nginx sin SSL desde el servidor FTP
+# Al parecer todo esta listo.
 
 source Funciones_SSL.sh
 source Funciones_HTTP.sh
@@ -372,9 +372,171 @@ while [ "$OPCION" -ne 0 ]; do
                             ;;
                             "tomcat")
                                 # Instalar tomcat sin SSL desde el FTP
+                                echo "Instalar Tomcat desde FTP..."
+                                curl -k $ftp_url/http/ubuntu/Tomcat/
+                                downloadsTomcat="https://tomcat.apache.org/index.html"
+                                dev_version=$(get_lts_version "$downloadsTomcat" 0)
+                                last_lts_version=$(get_lts_version "$downloadsTomcat" 1)
+
+                                echo "¿Que versión de Tomcat desea instalar"
+                                echo "1. Versión LTS disponible en el servidor FTP $last_lts_version"
+                                echo "2. Versión disponible en el servidor FTP $dev_version"
+                                echo "0. Salir"
+                                read -p "Eliga una opción: " OPCION_TOMCAT
+
+                                case "$OPCION_TOMCAT" in
+                                    1)
+                                        read -p "Ingrese el puerto en el que se instalará Tomcat: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 8443):" HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
+
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif ss -tuln | grep -q ":$HTTPS_PORT "; then
+                                            echo "El puerto $HTTPS_PORT esta ocupado en otro servicio."
+                                        else
+                                            # Instalar Java ya que Tomcat lo requiere
+                                            sudo apt update
+                                            sudo apt install default-jdk -y
+                                            java -version
+                                            curl -k -o apache-tomcat-$last_lts_version.tar.gz $ftp_url/http/ubuntu/Tomcat/apache-tomcat-$last_lts_version.tar.gz
+                                            tar -xzvf apache-tomcat-$last_lts_version.tar.gz
+                                            sudo mv apache-tomcat-$last_lts_version /opt/tomcat
+                                            # Modificar el puerto en server.xml
+                                            server_xml="/opt/tomcat/conf/server.xml"
+                                            sudo sed -i "s/port=\"8080\"/port=\"$PORT\"/g" "$server_xml"
+                                            # Otorgar permisos de ejecución
+                                            sudo chmod +x /opt/tomcat/bin/*.sh
+                                            # Iniciar Tomcat
+                                            /opt/tomcat/bin/startup.sh
+                                        fi
+                                    ;;
+                                    2)
+                                        read -p "Ingrese el puerto en el que se instalará Tomcat: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 8443):" HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
+
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif ss -tuln | grep -q ":$HTTPS_PORT "; then
+                                            echo "El puerto $HTTPS_PORT esta ocupado en otro servicio."
+                                        else
+                                            # Instalar Java ya que Tomcat lo requiere
+                                            sudo apt update
+                                            sudo apt install default-jdk -y
+                                            java -version
+                                            curl -k -o apache-tomcat-$dev_version.tar.gz $ftp_url/http/ubuntu/Tomcat/apache-tomcat-$dev_version.tar.gz
+                                            tar -xzvf apache-tomcat-$dev_version.tar.gz
+                                            sudo mv apache-tomcat-$dev_version /opt/tomcat
+                                            # Modificar el puerto en server.xml
+                                            server_xml="/opt/tomcat/conf/server.xml"
+                                            sudo sed -i "s/port=\"8080\"/port=\"$PORT\"/g" "$server_xml"
+                                            # Otorgar permisos de ejecución
+                                            sudo chmod +x /opt/tomcat/bin/*.sh
+                                            # Iniciar Tomcat
+                                            /opt/tomcat/bin/startup.sh
+                                        fi
+                                    ;;
+                                    0)
+                                        echo "Saliendo al menú..."
+                                    ;;
+                                    *)
+                                        echo "Opción no válida."
+                                    ;;
+                                esac
                             ;;
                             "nginx")
                                 # Instalar nginx sin SSL desde el FTP
+                                echo "Instalar Nginx desde FTP..."
+                                curl -k $ftp_url/http/ubuntu/Nginx/
+                                downloadsNginx="https://nginx.org/en/download.html"
+                                dev_version=$(get_lts_version "$downloadsNginx" 0)
+                                last_lts_version=$(get_lts_version "$downloadsNginx" 1)
+
+                                echo "¿Que versión de nginx desea instalar"
+                                echo "1. Versión LTS disponible en el servidor FTP $last_lts_version"
+                                echo "2. Versión de desarrollo disponible en el servidor FTP $dev_version"
+                                echo "0. Salir"
+                                read -p "Eliga una opción: " OPCION_NGINX
+
+                                case "$OPCION_NGINX" in
+                                    1)
+                                        read -p "Ingrese el puerto en el que se instalará Nginx: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 443): " HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
+
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif [[ $? -eq 0 ]]; then
+                                            echo "El puerto $PORT esta ocupado en otro servicio."
+                                        else
+                                            curl -k -o nginx-$last_lts_version.tar.gz $ftp_url/http/ubuntu/Nginx/nginx-$last_lts_version.tar.gz
+                                            # Descomprimir el archivo
+                                            sudo tar -xvzf nginx-$last_lts_version.tar.gz > /dev/null 2>&1
+                                            # Entrar a la carpeta descomprimida
+                                            cd /home/luissoto11/"nginx-$last_lts_version"
+                                            # Compilar el archivo
+                                            ./configure --prefix=/usr/local/"nginx" > /dev/null 2>&1
+                                            # Instalar el servicio
+                                            make > /dev/null 2>&1
+                                            sudo make install > /dev/null 2>&1
+                                            # Verificar la instalación de Nginx
+                                            /usr/local/nginx/sbin/nginx -v
+                                            # Ruta de la configuración del archivo
+                                            routeFileConfiguration="/usr/local/nginx/conf/nginx.conf"
+                                            # Modificar el puerto
+                                            sed -i -E "s/listen[[:space:]]{7}[0-9]{1,5}/listen      $PORT/" "$routeFileConfiguration"
+                                            # Verificar si esta escuchando en el puerto
+                                            sudo grep -i "listen[[:space:]]{7}" "$routeFileConfiguration"
+                                            sudo /usr/local/nginx/sbin/nginx
+                                            sudo /usr/local/nginx/sbin/nginx -s reload
+                                            ps aux | grep nginx
+                                        fi
+                                    ;;
+                                    2)
+                                        read -p "Ingrese el puerto en el que se instalará Nginx: " PORT
+                                        read -p "Ingrese el puerto HTTPS para SSL (recomendado 443): " HTTPS_PORT
+                                        verificar_puerto_reservado -puerto $PORT
+                                        verificar_puerto_reservado -puerto $HTTPS_PORT
+
+                                        if ss -tuln | grep -q ":$PORT "; then
+                                            echo "El puerto $PORT esta en uso. Eliga otro."
+                                        elif [[ $? -eq 0 ]]; then
+                                            echo "El puerto $PORT esta ocupado en otro servicio."
+                                        else
+                                            curl -k -o nginx-$dev_version.tar.gz $ftp_url/http/ubuntu/Nginx/nginx-$dev_version.tar.gz
+                                            # Descomprimir el archivo
+                                            sudo tar -xvzf nginx-$dev_version.tar.gz > /dev/null 2>&1
+                                            # Entrar a la carpeta descomprimida
+                                            cd /home/luissoto11/"nginx-$dev_version"
+                                            # Compilar el archivo
+                                            ./configure --prefix=/usr/local/"nginx" > /dev/null 2>&1
+                                            # Instalar el servicio
+                                            make > /dev/null 2>&1
+                                            sudo make install > /dev/null 2>&1
+                                            # Verificar la instalación de Nginx
+                                            /usr/local/nginx/sbin/nginx -v
+                                            # Ruta de la configuración del archivo
+                                            routeFileConfiguration="/usr/local/nginx/conf/nginx.conf"
+                                            # Modificar el puerto
+                                            sed -i -E "s/listen[[:space:]]{7}[0-9]{1,5}/listen      $PORT/" "$routeFileConfiguration"
+                                            # Verificar si esta escuchando en el puerto
+                                            sudo grep -i "listen[[:space:]]{7}" "$routeFileConfiguration"
+                                            sudo /usr/local/nginx/sbin/nginx
+                                            sudo /usr/local/nginx/sbin/nginx -s reload
+                                            ps aux | grep nginx
+                                        fi
+                                    ;;
+                                    0)
+                                        echo "Saliendo al menú..."
+                                    ;;
+                                    *)
+                                        echo "Opción no válida."
+                                    ;;
+                                esac
                             ;;
                             "salir")
                                 echo "Saliendo..."
