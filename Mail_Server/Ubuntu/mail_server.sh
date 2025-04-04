@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Función para instalar y configurar Postfix + Dovecot
+# Función para instalar y configurar Postfix + Dovecot
 install_mail_server() {
     echo "Instalando Postfix y Dovecot..."
     sudo apt update
@@ -8,12 +9,13 @@ install_mail_server() {
 
     echo "Configurando Postfix..."
     sudo bash -c "cat > /etc/postfix/main.cf" <<EOF
-myhostname = luissoto11
-mydomain = localhost
+myhostname = mail.ejemplo.com
+mydomain = ejemplo.com
 myorigin = \$mydomain
 inet_interfaces = all
 inet_protocols = ipv4
-mydestination = \$myhostname, localhost.\$mydomain, localhost, \$mydomain, luissoto11.localhost
+mydestination = \$myhostname, localhost.\$mydomain, localhost, \$mydomain
+mynetworks = 127.0.0.0/8
 home_mailbox = Maildir/
 smtpd_banner = \$myhostname ESMTP
 smtpd_relay_restrictions = reject_unauth_destination
@@ -24,9 +26,10 @@ EOF
     sudo systemctl enable postfix
 
     echo "Configurando Dovecot..."
-    sudo sed -i 's/^#protocols = imap pop3 lmtp/protocols = imap pop3/' /etc/dovecot/dovecot.conf
-    sudo sed -i 's/^#disable_plaintext_auth = yes/disable_plaintext_auth = no/' /etc/dovecot/conf.d/10-auth.conf
-    sudo sed -i 's/^mail_location = mbox:~/Mail:INBOX=/mail_location = maildir:~\/Maildir/' /etc/dovecot/conf.d/10-mail.conf
+    sudo sed -i 's|^#protocols = imap pop3 lmtp|protocols = imap pop3|' /etc/dovecot/dovecot.conf
+    sudo sed -i 's|^#disable_plaintext_auth = yes|disable_plaintext_auth = no|' /etc/dovecot/conf.d/10-auth.conf
+    sudo sed -i 's|^mail_location = mbox:~/mail:INBOX=/var/mail/%u|mail_location = maildir:~/Maildir|' /etc/dovecot/conf.d/10-mail.conf
+    grep -q "^mail_location" /etc/dovecot/conf.d/10-mail.conf || echo "mail_location = maildir:~/Maildir" | sudo tee -a /etc/dovecot/conf.d/10-mail.conf
 
     sudo systemctl restart dovecot
     sudo systemctl enable dovecot
@@ -57,10 +60,8 @@ install_squirrelmail(){
     sudo mv squirrelmail-webmail-1.4.22 /var/www/html/squirrelmail
     sudo chown -R www-data:www-data /var/www/html/squirrelmail
     sudo chmod 755 -R /var/www/html/squirrelmail
-    # Crear la carpeta de data y asignar permisos
-    sudo mkdir -p /var/local/squirrelmail/data
+    sudo mkdir /var/local/squirrelmail/data
     sudo chown -R www-data:www-data /var/local/squirrelmail
-    sudo chmod -R 755 /var/local/squirrelmail
     # Configurar squirrelmail
     cd /var/www/html/squirrelmail/config
     sudo cp config_default.php config.php
@@ -86,12 +87,12 @@ EOF
 
 }
 
-# Función para crear la zona directa enfocada al mail_server
+# Función para crear la zona directa
 create_zone_file() {
   DOMINIO=$1
   IP_CLIENTE=$2
   IP_SERVIDOR=$3
-  
+
   echo "Creando archivo de zona directa..."
   cat <<EOF > /etc/bind/db.$DOMINIO
 \$TTL 604800
@@ -124,20 +125,16 @@ EOF
 # Función para crear un usuario de correo
 create_mail_user() {
     read -p "Ingrese el nombre de usuario: " username
-    
+
     # Crear usuario con su directorio home
     sudo adduser "$username"
 
     # Crear estructura Maildir
-    sudo mkdir -p /home/test/Maildir/cur
-    sudo mkdir -p /home/test/Maildir/new
-    sudo mkdir -p /home/test/Maildir/tmp
-    sudo chown -R $username:$username /home/$username/Maildir
-    sudo chmod -R 700 /home/$username/Maildir
+    sudo mkdir -p "/home/$username/Maildir/{cur,new,tmp}"
 
     # Asignar permisos adecuados
-    sudo chown -R "$username:$username" "/home/$username"
-    sudo chmod -R 755 "/home/$username"
+    sudo chown -R "$username:$username" "/home/$username/Maildir"
+    sudo chmod -R 700 "/home/$username/Maildir"
 
     echo "Usuario '$username' creado con éxito y Maildir configurado correctamente."
 }
@@ -157,11 +154,10 @@ view_inbox() {
 }
 
 # install_squirrelmail
-create_zone_file
+# create_zone_file
 
 # Menú interactivo
 while true; do
-    clear
     echo "=============================="
     echo " SERVIDOR DE CORREO SMTP/POP3"
     echo "=============================="
