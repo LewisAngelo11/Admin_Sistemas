@@ -1,16 +1,18 @@
 #!/bin/bash
 
 # Función para instalar y configurar Postfix + Dovecot
-# Función para instalar y configurar Postfix + Dovecot
 install_mail_server() {
+    read -p "Ingrese el hostname: " hostname
+    read -p "Ingrese el nombre del dominio: " domain
+
     echo "Instalando Postfix y Dovecot..."
     sudo apt update
     sudo apt install -y postfix dovecot-core dovecot-pop3d dovecot-imapd mailutils
 
     echo "Configurando Postfix..."
     sudo bash -c "cat > /etc/postfix/main.cf" <<EOF
-myhostname = mail.ejemplo.com
-mydomain = ejemplo.com
+myhostname = $hostname
+mydomain = $domain
 myorigin = \$mydomain
 inet_interfaces = all
 inet_protocols = ipv4
@@ -89,9 +91,9 @@ EOF
 
 # Función para crear la zona directa
 create_zone_file() {
-  DOMINIO=$1
-  IP_CLIENTE=$2
-  IP_SERVIDOR=$3
+  read -p "Ingrese el dominio: " DOMINIO
+  read -p "Ingrese la IP del servidor: " IP_SERVIDOR
+  read -p "Ingrese la IP del cliente: " IP_SERVIDOR
 
   echo "Creando archivo de zona directa..."
   cat <<EOF > /etc/bind/db.$DOMINIO
@@ -153,9 +155,6 @@ view_inbox() {
     sudo ls -l "/home/$username/Maildir/new/"
 }
 
-# install_squirrelmail
-# create_zone_file
-
 # Menú interactivo
 while true; do
     echo "=============================="
@@ -163,8 +162,8 @@ while true; do
     echo "=============================="
     echo "1) Instalar servidor de correo"
     echo "2) Crear usuario de correo"
-    echo "3) Enviar correo de prueba"
-    echo "4) Ver correos recibidos"
+    echo "3) Instalar Squirrelmail"
+    echo "4) Configurar el DNS"
     echo "0) Salir"
     echo "=============================="
     read -p "Seleccione una opción: " option
@@ -172,8 +171,8 @@ while true; do
     case $option in
         1) install_mail_server ;;
         2) create_mail_user ;;
-        3) send_test_email ;;
-        4) view_inbox ;;
+        3) install_squirrelmail ;;
+        4) create_zone_file ;;
         0) echo "Saliendo..."; exit ;;
         *) echo "Opción inválida"; sleep 2 ;;
     esac
