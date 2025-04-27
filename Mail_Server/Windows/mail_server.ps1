@@ -90,12 +90,12 @@ function install-squirrel{
 
 # Main
 while($true){
-    Write-Host "Configuracion de servidor de correo, Selecciona una opcion [1-5]"
+    Write-Host "Menu de opciones Mail Server"
     Write-Host "1. Instalar Mercury"
     Write-Host "2. Crear usuarios"
     Write-Host "3. Instalar Squirrelmail"
     Write-Host "0. Salir"
-    $opc = Read-Host "Ingrese una opción:"
+    $opc = Read-Host "Ingrese una opción"
 
     if($opc -eq "0"){
         Write-Output "Saliendo..."
@@ -108,7 +108,10 @@ while($true){
                 install-mercury
             }
             '2'{
-                Write-Host "Abre la ventana de Mercury Ve a Configuration -> Magae Local Users -> Add y ahi creas el usuario"
+                Write-Host "Para crear un usuario siga estos pasos:"
+                Write-Host "1.- Abre la ventana de Mercury Ve a Configuration, Magae Local Users"
+                Write-Host "2.- Add."
+                Write-Host "3.- Crear el usuario."
             }
             '3'{
                 install-squirrel
