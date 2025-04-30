@@ -19,6 +19,7 @@ while($ciclo){
                 Write-Host "Nombre de unidad organizativa invalido"
                 $UO = Read-Host "Ingrese el nombre de su unidad organizativa"
             }
+            AddOrganization $UO
         }
         2{
             $User = Read-Host "ingrese el nombre de su usuario, por ejemplo "
@@ -42,6 +43,7 @@ while($ciclo){
             $opc = Read-Host "Seleccione una unidad organizativa para el usuario"
             $OrgUnit = $OU[$opc -1]
             Write-Host $OrgUnit
+            AddUser $User $Password $OrgUnit
         }
         3{
             Write-Host "Saliendo......"
