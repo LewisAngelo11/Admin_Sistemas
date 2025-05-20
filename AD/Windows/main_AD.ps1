@@ -8,7 +8,8 @@ while($ciclo){
     Write-Host "=== MENU DE OPCIONES ==="
     Write-Host "1. Crear una organizacion de AD"
     Write-Host "2. Crear usuario dentro de una organizacion AD"
-    Write-Host "3. Salir"
+    Write-Host "3. Configurar grupo con horario de acceso"
+    Write-Host "0. Salir"
 
     $opc = Read-Host "Elija una opcion"
 
@@ -45,7 +46,7 @@ while($ciclo){
             Write-Host $OrgUnit
             AddUser $User $Password $OrgUnit
         }
-        3{
+        0{
             Write-Host "Saliendo......"
             $ciclo = $false
         }
